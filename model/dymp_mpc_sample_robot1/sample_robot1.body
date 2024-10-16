@@ -1,0 +1,1098 @@
+format: ChoreonoidBody
+format_version: 2.0
+angle_unit: degree
+name: "sample_robot"
+root_link: "WAIST"
+links: 
+  - 
+    name: "WAIST"
+    translation: [ 0, 0, 0.909 ]
+    joint_name: WAIST
+    joint_type: free
+    mass: 4.2
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      0.03, 0, 0, 
+      0, 0.03, 0, 
+      0, 0, 0.03 ]
+    elements: 
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.1}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.1}
+      - 
+        type: RateGyroSensor
+        name: "gyrometer"
+        id: 0
+      - 
+        type: AccelerationSensor
+        name: "gsensor"
+        id: 0
+  - 
+    name: "CHEST_Y"
+    parent: WAIST
+    translation: [ 0, 0, 0.145 ]
+    joint_name: CHEST_Y
+    joint_type: revolute
+    joint_axis: [ 0, 0, 1 ]
+    joint_id: 6
+    joint_range: [ -30, 30 ]
+    joint_axis_inertia: 0.1
+    mass: 0.6
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      0.001, 0, 0, 
+      0, 0.001, 0, 
+      0, 0, 0.001 ]
+    elements: 
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.1}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.1}
+  - 
+    name: "CHEST_P"
+    parent: CHEST_Y
+    joint_name: CHEST_P
+    joint_type: revolute
+    joint_axis: [ 0, 1, 0 ]
+    joint_id: 7
+    joint_range: [ -30, 70 ]
+    joint_axis_inertia: 0.1
+    mass: 18.8
+    center_of_mass: [ -0.05, 0.0, 0.2 ]
+    inertia: [ 
+      1.0, 0, 0, 
+      0, 1.0, 0, 
+      0, 0, 0.3 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            translation: [ 0, 0, 0.2 ]
+            geometry: {type: Sphere, radius: 0.1}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            translation: [ 0, 0, 0.2 ]
+            geometry: {type: Sphere, radius: 0.1}
+  - 
+    name: "HEAD_Y"
+    parent: CHEST_P
+    translation: [ 0, 0, 0.45 ]
+    joint_name: HEAD_Y
+    joint_type: revolute
+    joint_axis: [ 0, 0, 1 ]
+    joint_id: 14
+    joint_range: [ -180, 180 ]
+    joint_axis_inertia: 0.1
+    mass: 0.1
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      1.0e-4, 0, 0, 
+      0, 1.0e-4, 0, 
+      0, 0, 1.0e-4 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.1}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.1}
+  - 
+    name: "HEAD_P"
+    parent: HEAD_Y
+    joint_name: HEAD_P
+    joint_type: revolute
+    joint_axis: [ 0, 1, 0 ]
+    joint_id: 15
+    joint_range: [ -30, 30 ]
+    joint_axis_inertia: 0.1
+    mass: 1.4
+    center_of_mass: [ 0, 0, 0.04 ]
+    inertia: [ 
+      0.005, 0, 0, 
+      0, 0.005, 0, 
+      0, 0, 0.005 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.1}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.1}
+  - 
+    name: "R_SHOULDER_P"
+    parent: CHEST_P
+    translation: [ 0, -0.18, 0.33 ]
+    joint_name: R_SHOULDER_P
+    joint_type: revolute
+    joint_axis: [ 0, 1, 0 ]
+    joint_id: 24
+    joint_range: [ -180, 180 ]
+    joint_axis_inertia: 0.1
+    mass: 1.9
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      0.003, 0, 0,
+      0, 0.003, 0, 
+      0, 0, 0.003 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.035}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.035}
+  - 
+    name: "R_SHOULDER_R"
+    parent: R_SHOULDER_P
+    translation: [ 0, 0, -0.04 ]
+    joint_name: R_SHOULDER_R
+    joint_type: revolute
+    joint_axis: [ 1, 0, 0 ]
+    joint_id: 25
+    joint_range: [ -105, 40 ]
+    joint_axis_inertia: 0.1
+    mass: 0.3
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      0.0003, 0, 0, 
+      0, 0.0003, 0, 
+      0, 0, 0.0001 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.05}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.05}
+  - 
+    name: "R_SHOULDER_Y"
+    parent: R_SHOULDER_R
+    joint_name: R_SHOULDER_Y
+    joint_type: revolute
+    joint_axis: [ 0, 0, 1 ]
+    joint_id: 26
+    joint_range: [ -180, 180 ]
+    joint_axis_inertia: 0.1
+    mass: 2.4
+    center_of_mass: [ 0, 0, -0.2 ]
+    inertia: [ 
+      0.1, 0, 0, 
+      0, 0.1, 0, 
+      0, 0, 0.005 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.1]
+            rotation: [1.0, 0.0, 0.0, 90.0]
+            geometry: {type: Cylinder, radius: 0.025, height: 0.2}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.1]
+            rotation: [1.0, 0.0, 0.0, 90.0]
+            geometry: {type: Cylinder, radius: 0.025, height: 0.2}
+  - 
+    name: "R_ELBOW_P"
+    parent: R_SHOULDER_Y
+    translation: [ 0, 0, -0.26 ]
+    joint_name: R_ELBOW_P
+    joint_type: revolute
+    joint_axis: [ 0, 1, 0 ]
+    joint_id: 27
+    joint_range: [ -135, 0 ]
+    joint_axis_inertia: 0.1
+    mass: 0.2
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      0.0002, 0, 0, 
+      0, 0.0002, 0, 
+      0, 0, 0.0001 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.0375}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.0375}
+  - 
+    name: "R_ELBOW_Y"
+    parent: R_ELBOW_P
+    joint_name: R_ELBOW_Y
+    joint_type: revolute
+    joint_axis: [ 0, 0, 1 ]
+    joint_id: 28
+    joint_range: [ -180, 180 ]
+    joint_axis_inertia: 0.1
+    mass: 1.4
+    center_of_mass: [ 0, 0, -0.15 ]
+    inertia: [ 
+      0.05, 0, 0, 
+      0, 0.05, 0, 
+      0, 0, 0.001 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.1]
+            rotation: [1.0, 0.0, 0.0, 90.0]
+            geometry: {type: Cylinder, radius: 0.025, height: 0.1}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.1]
+            rotation: [1.0, 0.0, 0.0, 90.0]
+            geometry: {type: Cylinder, radius: 0.025, height: 0.1}
+  - 
+    name: "R_WRIST_P"
+    parent: R_ELBOW_Y
+    translation: [ 0, 0, -0.23 ]
+    joint_name: R_WRIST_P
+    joint_type: revolute
+    joint_axis: [ 1, 0, 0 ]
+    joint_id: 29
+    joint_range: [ -90, 50 ]
+    joint_axis_inertia: 0.1
+    mass: 0.06
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      3.5e-05, 0, 0, 
+      0, 3.5e-05, 0, 
+      0, 0, 2.4e-05 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.035}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.035}
+  - 
+    name: "R_WRIST_Y"
+    parent: R_WRIST_P
+    joint_name: R_WRIST_Y
+    joint_type: revolute
+    joint_axis: [ 0, 0, 1 ]
+    joint_id: 30
+    joint_range: [ -90, 90 ]
+    joint_axis_inertia: 0.1
+    mass: 1.6
+    center_of_mass: [ 0, 0, -0.1 ]
+    inertia: [ 
+      0.02, 0, 0, 
+      0, 0.02, 0, 
+      0, 0, 0.003 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.110]
+            geometry: {type: Box, size: [0.075, 0.030, 0.100]}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.110]
+            geometry: {type: Box, size: [0.075, 0.030, 0.100]}
+  - 
+    name: "R_HAND"
+    parent: R_WRIST_Y
+    translation: [ 0, -0.02, -0.08 ]
+    joint_name: R_HAND
+    joint_type: revolute
+    joint_axis: [ 1, 0, 0 ]
+    joint_id: 31
+    joint_range: [ -60, 120 ]
+    joint_axis_inertia: 0.1
+    mass: 0.04
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      0.001, 0, 0, 
+      0, 0.001, 0, 
+      0, 0, 0.001 ]
+  - 
+    name: "L_SHOULDER_P"
+    parent: CHEST_P
+    translation: [ 0, 0.18, 0.33 ]
+    joint_name: L_SHOULDER_P
+    joint_type: revolute
+    joint_axis: [ 0, 1, 0 ]
+    joint_id: 16
+    joint_range: [ -180, 180 ]
+    joint_axis_inertia: 0.1
+    mass: 1.9
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      0.003, 0, 0,
+      0, 0.003, 0, 
+      0, 0, 0.003 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.035}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.035}
+  - 
+    name: "L_SHOULDER_R"
+    parent: L_SHOULDER_P
+    translation: [ 0, 0, -0.04 ]
+    joint_name: L_SHOULDER_R
+    joint_type: revolute
+    joint_axis: [ 1, 0, 0 ]
+    joint_id: 17
+    joint_range: [ -40, 105 ]
+    joint_axis_inertia: 0.1
+    mass: 0.3
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      0.0003, 0, 0, 
+      0, 0.0003, 0, 
+      0, 0, 0.0001 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.05}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.05}
+  - 
+    name: "L_SHOULDER_Y"
+    parent: L_SHOULDER_R
+    joint_name: L_SHOULDER_Y
+    joint_type: revolute
+    joint_axis: [ 0, 0, 1 ]
+    joint_id: 18
+    joint_range: [ -180, 180 ]
+    joint_axis_inertia: 0.1
+    mass: 2.4
+    center_of_mass: [ 0, 0, -0.2 ]
+    inertia: [ 
+      0.1, 0, 0, 
+      0, 0.1, 0, 
+      0, 0, 0.005 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.1]
+            rotation: [1.0, 0.0, 0.0, 90.0]
+            geometry: {type: Cylinder, radius: 0.025, height: 0.2}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.1]
+            rotation: [1.0, 0.0, 0.0, 90.0]
+            geometry: {type: Cylinder, radius: 0.025, height: 0.2}
+  - 
+    name: "L_ELBOW_P"
+    parent: L_SHOULDER_Y
+    translation: [ 0.02, 0, -0.26 ]
+    joint_name: L_ELBOW_P
+    joint_type: revolute
+    joint_axis: [ 0, 1, 0 ]
+    joint_id: 19
+    joint_range: [ -135, 0 ]
+    joint_axis_inertia: 0.1
+    mass: 0.2
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      0.0002, 0, 0, 
+      0, 0.0002, 0, 
+      0, 0, 0.0001 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.0375}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.0375}
+  - 
+    name: "L_ELBOW_Y"
+    parent: L_ELBOW_P
+    joint_name: L_ELBOW_Y
+    joint_type: revolute
+    joint_axis: [ 0, 0, 1 ]
+    joint_id: 20
+    joint_range: [ -180, 180 ]
+    joint_axis_inertia: 0.1
+    mass: 1.4
+    center_of_mass: [ 0, 0, -0.15 ]
+    inertia: [ 
+      0.05, 0, 0, 
+      0, 0.05, 0, 
+      0, 0, 0.001 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.1]
+            rotation: [1.0, 0.0, 0.0, 90.0]
+            geometry: {type: Cylinder, radius: 0.025, height: 0.1}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.1]
+            rotation: [1.0, 0.0, 0.0, 90.0]
+            geometry: {type: Cylinder, radius: 0.025, height: 0.1}
+  - 
+    name: "L_WRIST_P"
+    parent: L_ELBOW_Y
+    translation: [ 0, 0, -0.23 ]
+    joint_name: L_WRIST_P
+    joint_type: revolute
+    joint_axis: [ 1, 0, 0 ]
+    joint_id: 21
+    joint_range: [ -50, 90 ]
+    joint_axis_inertia: 0.1
+    mass: 0.06
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      3.5e-05, 0, 0, 
+      0, 3.5e-05, 0, 
+      0, 0, 2.4e-05 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.035}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.035}
+  - 
+    name: "L_WRIST_Y"
+    parent: L_WRIST_P
+    joint_name: L_WRIST_Y
+    joint_type: revolute
+    joint_axis: [ 0, 0, 1 ]
+    joint_id: 22
+    joint_range: [ -90, 90 ]
+    joint_axis_inertia: 0.1
+    mass: 1.6
+    center_of_mass: [ 0, 0, -0.1 ]
+    inertia: [ 
+      0.02, 0, 0, 
+      0, 0.02, 0, 
+      0, 0, 0.003 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.110]
+            geometry: {type: Box, size: [0.075, 0.030, 0.100]}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.110]
+            geometry: {type: Box, size: [0.075, 0.030, 0.100]}
+  - 
+    name: "L_HAND"
+    parent: L_WRIST_Y
+    translation: [ 0, 0.02, -0.08 ]
+    rotation: [ 0, 0, 1, 180 ]
+    joint_name: L_HAND
+    joint_type: revolute
+    joint_axis: [ 1, 0, 0 ]
+    joint_id: 23
+    joint_range: [ -60, 120 ]
+    joint_axis_inertia: 0.1
+    mass: 0.04
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      0.001, 0, 0, 
+      0, 0.001, 0, 
+      0, 0, 0.001 ]
+  - 
+    name: "R_CROTCH_Y"
+    parent: WAIST
+    translation: [ 0, -0.08, 0 ]
+    joint_name: R_CROTCH_Y
+    joint_type: revolute
+    joint_axis: [ 0, 0, 1 ]
+    joint_id: 8
+    joint_range: [ -90, 90 ]
+    joint_axis_inertia: 0.1
+    mass: 0.7
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      0.001, 0, 0, 
+      0, 0.001, 0, 
+      0, 0, 0.001 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.035}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.035}
+  - 
+    name: "R_CROTCH_R"
+    parent: R_CROTCH_Y
+    translation: [ 0, 0, -0.055 ]
+    joint_name: R_CROTCH_R
+    joint_type: revolute
+    joint_axis: [ 1, 0, 0 ]
+    joint_id: 9
+    joint_range: [ -36, 36 ]
+    joint_axis_inertia: 0.1
+    mass: 0.05
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      1.0-05, 0, 0, 
+      0, 1.0e-05, 0, 
+      0, 0, 1.0e-05 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.05}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.05}
+  - 
+    name: "R_CROTCH_P"
+    parent: R_CROTCH_R
+    joint_name: R_CROTCH_P
+    joint_type: revolute
+    joint_axis: [ 0, 1, 0 ]
+    joint_id: 10
+    joint_range: [ -110, 35 ]
+    joint_axis_inertia: 0.1
+    mass: 3.0
+    center_of_mass: [ 0, 0, -0.2 ]
+    inertia: [ 
+      0.15, 0, 0, 
+      0, 0.15, 0, 
+      0, 0, 0.007 ]
+    elements: 
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.150]
+            rotation: [1.0, 0.0, 0.0, 90.0]
+            geometry: {type: Cylinder, radius: 0.025, height: 0.300}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.150]
+            rotation: [1.0, 0.0, 0.0, 90.0]
+            geometry: {type: Cylinder, radius: 0.025, height: 0.300}
+  - 
+    name: "R_KNEE_P"
+    parent: R_CROTCH_P
+    translation: [ 0, 0, -0.36 ]
+    joint_name: R_KNEE_P
+    joint_type: revolute
+    joint_axis: [ 0, 1, 0 ]
+    joint_id: 11
+    joint_range: [ 0, 140 ]
+    joint_axis_inertia: 0.1
+    mass: 3.1
+    center_of_mass: [ 0, 0, -0.14 ]
+    inertia: [ 
+      0.1, 0, 0, 
+      0, 0.1, 0, 
+      0, 0, 0.006 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.200]
+            rotation: [1.0, 0.0, 0.0, 90.0]
+            geometry: {type: Cylinder, radius: 0.025, height: 0.400}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.200]
+            rotation: [1.0, 0.0, 0.0, 90.0]
+            geometry: {type: Cylinder, radius: 0.025, height: 0.400}
+  - 
+    name: "R_ANKLE_R"
+    parent: R_KNEE_P
+    translation: [ 0, 0, -0.36 ]
+    joint_name: R_ANKLE_R
+    joint_type: revolute
+    joint_axis: [ 1, 0, 0 ]
+    joint_id: 12
+    joint_range: [ -30, 30 ]
+    joint_axis_inertia: 0.1
+    mass: 0.06
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      2.0e-05, 0, 0, 
+      0, 2.0e-05, 0, 
+      0, 0, 2.0e-05 ]
+    elements: 
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.035}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.035}
+  - 
+    name: "R_ANKLE_P"
+    parent: R_ANKLE_R
+    joint_name: R_ANKLE_P
+    joint_type: revolute
+    joint_axis: [ 0, 1, 0 ]
+    joint_id: 13
+    joint_range: [ -90, 40 ]
+    joint_axis_inertia: 0.1
+    mass: 1.3
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      0.01, 0, 0, 
+      0, 0.01, 0, 
+      0, 0, 0.005 ]
+    elements: 
+      #-
+      #  type: Visual
+      #  elements:
+      #    -
+      #      type: Shape
+      #      translation: [0.0, 0.0, -0.075]
+      #      geometry: {type: Box, size: [0.20, 0.10, 0.05]}
+      #-
+      #  type: Collision
+      #  elements:
+      #    -
+      #      type: Shape
+      #      translation: [0.0, 0.0, -0.075]
+      #      geometry: {type: Box, size: [0.20, 0.10, 0.05]}
+      - 
+        type: Visual
+        elements: 
+          - 
+            type: Group
+            name: R_ANKLE_P_LINK
+            elements: 
+              - 
+                type: Group
+                elements: 
+                  - 
+                    type: Resource
+                    #uri: "R_ANKLE_P_LINK.wrl"
+                    uri: "R_ANKLE_P_LINK_SIMPLE_FRIENDS.wrl"
+      - 
+        type: Collision
+        elements: 
+          - 
+            type: Resource
+            uri: "R_ANKLE_P_LINK_SIMPLE_FRIENDS.wrl"
+      - 
+        type: ForceSensor
+        name: "rfsensor"
+        id: 0
+        translation: [ 0, 0, -0.104 ]
+  - 
+    name: "L_CROTCH_Y"
+    parent: WAIST
+    translation: [ 0, 0.08, 0 ]
+    joint_name: L_CROTCH_Y
+    joint_type: revolute
+    joint_axis: [ 0, 0, 1 ]
+    joint_id: 0
+    joint_range: [ -90, 90 ]
+    joint_axis_inertia: 0.1
+    mass: 0.7
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      0.001, 0, 0, 
+      0, 0.001, 0, 
+      0, 0, 0.001 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.035}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.035}
+  - 
+    name: "L_CROTCH_R"
+    parent: L_CROTCH_Y
+    translation: [ 0, 0, -0.055 ]
+    joint_name: L_CROTCH_R
+    joint_type: revolute
+    joint_axis: [ 1, 0, 0 ]
+    joint_id: 1
+    joint_range: [ -36, 36 ]
+    joint_axis_inertia: 0.1
+    mass: 0.05
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      1.0-05, 0, 0, 
+      0, 1.0e-05, 0, 
+      0, 0, 1.0e-05 ]
+    elements:
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.05}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.05}
+  - 
+    name: "L_CROTCH_P"
+    parent: L_CROTCH_R
+    joint_name: L_CROTCH_P
+    joint_type: revolute
+    joint_axis: [ 0, 1, 0 ]
+    joint_id: 2
+    joint_range: [ -110, 35 ]
+    joint_axis_inertia: 0.1
+    mass: 3.0
+    center_of_mass: [ 0, 0, -0.2 ]
+    inertia: [ 
+      0.15, 0, 0, 
+      0, 0.15, 0, 
+      0, 0, 0.007 ]
+    elements: 
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.150]
+            rotation: [1.0, 0.0, 0.0, 90.0]
+            geometry: {type: Cylinder, radius: 0.025, height: 0.300}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.150]
+            rotation: [1.0, 0.0, 0.0, 90.0]
+            geometry: {type: Cylinder, radius: 0.025, height: 0.300}
+  - 
+    name: "L_KNEE_P"
+    parent: L_CROTCH_P
+    translation: [ 0, 0, -0.36 ]
+    joint_name: L_KNEE_P
+    joint_type: revolute
+    joint_axis: [ 0, 1, 0 ]
+    joint_id: 3
+    joint_range: [ 0, 140 ]
+    joint_axis_inertia: 0.1
+    mass: 3.1
+    center_of_mass: [ 0, 0, -0.14 ]
+    inertia: [ 
+      0.1, 0, 0, 
+      0, 0.1, 0, 
+      0, 0, 0.006 ]
+    elements: 
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.200]
+            rotation: [1.0, 0.0, 0.0, 90.0]
+            geometry: {type: Cylinder, radius: 0.025, height: 0.400}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            translation: [0.0, 0.0, -0.200]
+            rotation: [1.0, 0.0, 0.0, 90.0]
+            geometry: {type: Cylinder, radius: 0.025, height: 0.400}
+  - 
+    name: "L_ANKLE_R"
+    parent: L_KNEE_P
+    translation: [ 0, 0, -0.36 ]
+    joint_name: L_ANKLE_R
+    joint_type: revolute
+    joint_axis: [ 1, 0, 0 ]
+    joint_id: 4
+    joint_range: [ -30, 30 ]
+    joint_axis_inertia: 0.1
+    mass: 0.06
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      2.0e-05, 0, 0, 
+      0, 2.0e-05, 0, 
+      0, 0, 2.0e-05 ]
+    climit: 86
+    elements: 
+      -
+        type: Visual
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.035}
+      -
+        type: Collision
+        elements:
+          -
+            type: Shape
+            geometry: {type: Sphere, radius: 0.035}
+  - 
+    name: "L_ANKLE_P"
+    parent: L_ANKLE_R
+    joint_name: L_ANKLE_P
+    joint_type: revolute
+    joint_axis: [ 0, 1, 0 ]
+    joint_id: 5
+    joint_range: [ -90, 40 ]
+    joint_axis_inertia: 0.1
+    mass: 1.3
+    center_of_mass: [ 0, 0, 0 ]
+    inertia: [ 
+      0.01, 0, 0, 
+      0, 0.01, 0, 
+      0, 0, 0.005 ]
+    elements: 
+      #-
+      #  type: Visual
+      #  elements:
+      #    -
+      #      type: Shape
+      #      translation: [0.0, 0.0, -0.075]
+      #      geometry: {type: Box, size: [0.20, 0.10, 0.05]}
+      #-
+      #  type: Collision
+      #  elements:
+      #    -
+      #      type: Shape
+      #      translation: [0.0, 0.0, -0.075]
+      #      geometry: {type: Box, size: [0.20, 0.10, 0.05]}
+      - 
+        type: Visual
+        elements: 
+          - 
+            type: Group
+            name: R_ANKLE_P_LINK
+            elements: 
+              - 
+                type: Group
+                elements: 
+                  - 
+                    type: Resource
+                    #uri: "R_ANKLE_P_LINK.wrl"
+                    uri: "R_ANKLE_P_LINK_SIMPLE_FRIENDS.wrl"
+      - 
+        type: Collision
+        elements: 
+          - 
+            type: Resource
+            uri: "R_ANKLE_P_LINK_SIMPLE_FRIENDS.wrl"
+      - 
+        type: ForceSensor
+        name: "lfsensor"
+        id: 1
+        translation: [ 0, 0, -0.104 ]
+
+body_handlers: SampleRobotBodyHandler
+standardPose: [ 0.0, 0.0, -17.0, 36.0, 0.0, -19.0, 0.0, 0.0, 0.0, 0.0, -17.0, 36.0, 0.0, -19.0, 0.0, 0.0, 15.0, 15.0, -5.0, -30.0, 0.0, 45.0, 0.0, 0.0, 15.0, -15.0, 5.0, -30.0, 0.0, -45.0, 0.0, 0.0 ]
+linkGroup: 
+  - 
+    name: UPPER_BODY
+    links: 
+      - 
+        name: HEAD
+        links: [ HEAD_Y, HEAD_P ]
+      - 
+        name: ARMS
+        links: 
+          - 
+            name: L_ARM
+            links: [ L_SHOULDER_P, L_SHOULDER_R, L_SHOULDER_Y, L_ELBOW_P, L_ELBOW_Y, L_WRIST_P, L_WRIST_Y, L_HAND_END ]
+          - 
+            name: R_ARM
+            links: [ R_SHOULDER_P, R_SHOULDER_R, R_SHOULDER_Y, R_ELBOW_P, R_ELBOW_Y, R_WRIST_P, R_WRIST_Y, R_HAND_END ]
+      - 
+        name: CHEST
+        links: [ CHEST_Y, CHEST_P ]
+  - WAIST
+  - 
+    name: LEGS
+    links: 
+      - 
+        name: L_LEG
+        links: [ L_CROTCH_Y, L_CROTCH_P, L_CROTCH_R, L_KNEE_P, L_ANKLE_R, L_ANKLE_P ]
+      - 
+        name: R_LEG
+        links: [ R_CROTCH_Y, R_CROTCH_P, R_CROTCH_R, R_KNEE_P, R_ANKLE_R, R_ANKLE_P ]
+possibleIkInterpolationLinks: [ WAIST, L_ANKLE_P, R_ANKLE_P ]
+defaultIkInterpolationLinks: [ WAIST, L_ANKLE_P, R_ANKLE_P ]
+possileSupportLinks: [ L_ANKLE_P, R_ANKLE_P ]
+defaultIKsetup: 
+  WAIST: [ L_ANKLE_P, R_ANKLE_P ]
+  L_ANKLE_P: [ WAIST ]
+  R_ANKLE_P: [ WAIST ]
+  L_HAND_END: [ CHEST_P ]
+  R_HAND_END: [ CHEST_P ]
+footLinks: 
+  - 
+    link: L_ANKLE_P
+    sole_center: [ 0.0000, 0.0000, -0.104 ]
+    toe_offset: [ 0.15, 0.0, -0.104 ]
+  - 
+    link: R_ANKLE_P
+    sole_center: [ 0.0000, 0.0000, -0.104 ]
+    toe_offset: [ 0.15, 0.0, -0.104 ]
+symmetricJoints: 
+  - [ L_CROTCH_Y, R_CROTCH_Y, -1 ]
+  - [ L_CROTCH_P, R_CROTCH_P, 1 ]
+  - [ L_CROTCH_R, R_CROTCH_R, -1 ]
+  - [ L_KNEE_P, R_KNEE_P, 1 ]
+  - [ L_ANKLE_R, R_ANKLE_R, -1 ]
+  - [ L_ANKLE_P, R_ANKLE_P, 1 ]
+  - [ L_SHOULDER_P, R_SHOULDER_P, 1 ]
+  - [ L_SHOULDER_R, R_SHOULDER_R, -1 ]
+  - [ L_SHOULDER_Y, R_SHOULDER_Y, -1 ]
+  - [ L_ELBOW_P, R_ELBOW_P, 1 ]
+  - [ L_ELBOW_Y, R_ELBOW_Y, -1 ]
+  - [ L_WRIST_P, R_WRIST_P, -1 ]
+  - [ L_WRIST_Y, R_WRIST_Y, -1 ]
+  - [ L_HAND, R_HAND, 1 ]
+symmetricIkLinks: 
+  - [ WAIST ]
+  - [ L_ANKLE_P, R_ANKLE_P ]
+divisionNumberOfPrimitiveGeometries: 10
+selfCollisionDetection: 
+  excludeTreeDepth: 3
+endEffectors: 
+  - R_ANKLE_P
+  - L_ANKLE_P
+  - R_HAND_END
+  - L_HAND_END

@@ -1,0 +1,87 @@
+regularization      : 10
+state_regularization: 0
+cutoff_step_size    : 0.1
+min_step_size       : 1.0
+max_step_size       : 1.0
+correction_rate     : 0.5
+mpc_prediction_steps: 15
+mpc_timestep        : 0.020
+mpc_timestep_scale  : 1.0
+mpc_num_threads     : 1
+mpc_update_cycle    : 5
+mpc_num_iter        : 50
+mpc_delay_mode      : true
+mpc_feedback        : true
+fix_initial_state   : true
+fix_initial_input   : false
+parallelize         : false
+enable_sparse       : false
+verbose             : false
+save_plan           : true
+save_comptime       : false
+centroid:
+  body_range_min    : [-0.1, -0.1, -0.25]
+  body_range_max    : [ 0.1,  0.1,  0.25]
+  duration_min      : 0.0
+  duration_max      : 10.0
+  swing_height      : 0.05
+  swing_slope       : 0.10
+  swing_lift_margin : 0.0
+  swing_land_margin : 0.0
+  swing_turn_margin : 0.0
+  enable_rotation   : true
+  rotation_resolution : 1
+  end_wrench_parametrization : "stiffness"
+  #end_wrench_parametrization : "direct"
+  #end_interpolation          : "cycloid_local"
+  end_interpolation          : "cycloid_global"
+  #end_interpolation          : "polynomial"
+  compl_weight               : 1000
+  end:
+   -
+    base_pos      : [ 0.0, -0.05,   0.0]
+    pos_min       : [-0.3, -0.15, -0.85]
+    pos_max       : [ 0.3,  0.05, -0.65]
+    cop_min       : [-0.1, -0.1, -0.1]
+    cop_max       : [ 0.1,  0.1,  0.1]
+    stiffness_max : 50.0
+    cmp_offset    : [0, 0]
+    lock_cmp      : false
+    lock_moment   : false
+   -
+    base_pos      : [ 0.0,  0.05,  0.0]
+    pos_min       : [-0.3, -0.05, -0.85]
+    pos_max       : [ 0.3,  0.15, -0.65]
+    cop_min       : [-0.1, -0.1, -0.1]
+    cop_max       : [ 0.1,  0.1,  0.1]
+    stiffness_max : 50.0
+    cmp_offset    : [0, -0]
+    lock_cmp      : false
+    lock_moment   : false
+  face:
+   -
+    normal : [0, 0, 1]
+    vertex:
+     -
+      pos: [-10.0, -10.0,  0.0]
+     -
+      pos: [-10.0,  10.0,  0.0]
+     -
+      pos: [ 10.0,  10.0,  0.0]
+     -
+      pos: [ 10.0, -10.0,  0.0]
+  initial_weight        : 1.0
+  terminal_weight       : 1.0
+  centroid_pos_weight   : [1,1,10]
+  centroid_ori_weight   : [1,1,1]
+  centroid_vel_weight   : [1,1,1]
+  centroid_L_weight     : [1,1,1]
+  time_weight           : 100
+  duration_weight       : 100
+  end_pos_weight        : [1,1,1]
+  end_ori_weight        : [1,1,1]
+  end_vel_weight        : [1,1,1]
+  end_angvel_weight     : [1,1,1]
+  end_stiffness_weight  : 1
+  end_cmp_weight        : [100,100]
+  end_moment_weight     : [100,100,100]

@@ -1,0 +1,7 @@
+vertical_hip_joint_offset : -0.055
+lateral_hip_joint_offset  :  0.08
+lateral_knee_offset       :  0.0
+thigh_length              :  0.36
+shank_length              :  0.36
+hand_offset0          : [0.0, -0.35, -0.15]
+hand_offset1          : [0.0,  0.35, -0.15]
