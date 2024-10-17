@@ -6,6 +6,8 @@
 
 #include <rollpitchyaw.h>
 
+#include <cnoid/ExecutablePath>
+
 using namespace std;
 
 namespace dymp{
@@ -55,11 +57,12 @@ void MyRobot::Init(cnoid::SimpleControllerIO* io){
     // 30 joints
     joint.resize(32);
     
-    const char* robotFilename            = "C:\\usr\\Develop\\choreonoid\\dymp_mpc\\controller\\dance_controller\\robot.yaml";
-    const char* plannerWholebodyFilename = "C:\\usr\\Develop\\choreonoid\\dymp_mpc\\controller\\dance_controller\\planner_wholebody.yaml";
-    const char* plannerCentroidFilename  = "C:\\usr\\Develop\\choreonoid\\dymp_mpc\\controller\\dance_controller\\planner_centroid.yaml";
-    const char* pseqConfFilename         = "C:\\usr\\Develop\\choreonoid\\dymp_mpc\\controller\\dance_controller\\poseseq.yaml";
-    const char* kinematicsFilename       = "C:\\usr\\Develop\\choreonoid\\dymp_mpc\\controller\\dance_controller\\kinematics.yaml";
+    string path = cnoid::shareDir() + "/project/dymp_mpc/dance_controller/config/";
+    string robotFilename            = path + "robot.yaml";
+    string plannerWholebodyFilename = path + "planner_wholebody.yaml";
+    string plannerCentroidFilename  = path + "planner_centroid.yaml";
+    string pseqConfFilename         = path + "poseseq.yaml";
+    string kinematicsFilename       = path + "kinematics.yaml";
 
     Read(YAML::LoadFile(robotFilename));
 
