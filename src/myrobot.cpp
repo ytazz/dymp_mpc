@@ -72,7 +72,7 @@ void MyRobot::Init(cnoid::SimpleControllerIO* io){
     kinematics->Read(YAML::LoadFile(kinematicsFilename));
 
     poseseq->Read(YAML::LoadFile(pseqConfFilename));
-    poseseq->Load(YAML::LoadFile(poseseq->pseqFile));
+    poseseq->Load(YAML::LoadFile(cnoid::shareDir() + "/motion/" + poseseq->pseqFile));
 
     Robot::Init(io, timer, joint);
 
