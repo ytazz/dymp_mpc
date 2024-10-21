@@ -60,8 +60,7 @@ void Kinematics::Init(dymp::Wholebody* wb){
 	wb->ends  .resize(End  ::Num);
 		
     // kinematic and inertial parameters of sample robot
-    /*
-	wb->links[ 0] = dymp::Wholebody::Link( 4.200, dymp::vec3_t(0.030, 0.030, 0.030), dymp::vec3_t( 0.000,  0.000,  0.000), -1, -1, -1, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::zero3);
+    wb->links[ 0] = dymp::Wholebody::Link( 4.200, dymp::vec3_t(0.030, 0.030, 0.030), dymp::vec3_t( 0.000,  0.000,  0.000), -1, -1, -1, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::zero3);
 	wb->links[ 1] = dymp::Wholebody::Link( 0.600, dymp::vec3_t(0.001, 0.001, 0.001), dymp::vec3_t( 0.000,  0.000,  0.000), -1,  0,  6, dymp::vec3_t( 0.000,  0.000,  0.145), dymp::ez);
 	wb->links[ 2] = dymp::Wholebody::Link(18.800, dymp::vec3_t(1.000, 1.000, 0.300), dymp::vec3_t(-0.050,  0.000,  0.200),  0,  1,  7, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ey);
 	wb->links[ 3] = dymp::Wholebody::Link( 0.100, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000,  0.000,  0.000), -1,  2, 14, dymp::vec3_t( 0.000,  0.000,  0.450), dymp::ez);
@@ -98,48 +97,9 @@ void Kinematics::Init(dymp::Wholebody* wb){
 	wb->links[30] = dymp::Wholebody::Link( 3.100, dymp::vec3_t(0.100, 0.100, 0.006), dymp::vec3_t( 0.000,  0.000, -0.140), -1, 29,  3, dymp::vec3_t( 0.000,  0.000, -0.360), dymp::ey);
 	wb->links[31] = dymp::Wholebody::Link( 0.060, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000,  0.000,  0.000), -1, 30,  4, dymp::vec3_t( 0.000,  0.000, -0.360), dymp::ex);
 	wb->links[32] = dymp::Wholebody::Link( 1.300, dymp::vec3_t(0.010, 0.010, 0.005), dymp::vec3_t( 0.000,  0.000,  0.000),  4, 31,  5, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ey);
-    */
-
-    // kinematic and inertial parameters of RHP
-    wb->links[ 0] = dymp::Wholebody::Link( 4.224, dymp::vec3_t(0.030, 0.019, 0.029), dymp::vec3_t( 0.000,  0.000,  0.000), -1, -1, -1, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::zero3);
-	wb->links[ 1] = dymp::Wholebody::Link( 0.642, dymp::vec3_t(0.000, 0.001, 0.000), dymp::vec3_t(-0.000, -0.000, -0.020), -1,  0,  6, dymp::vec3_t( 0.000,  0.000,  0.145), dymp::ez);
-	wb->links[ 2] = dymp::Wholebody::Link(18.826, dymp::vec3_t(1.176, 1.243, 0.248), dymp::vec3_t(-0.056,  0.001,  0.199),  0,  1,  7, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ey);
-	wb->links[ 3] = dymp::Wholebody::Link( 0.141, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000, -0.000, -0.016), -1,  2, 14, dymp::vec3_t( 0.000,  0.000,  0.450), dymp::ez);
-	wb->links[ 4] = dymp::Wholebody::Link( 1.392, dymp::vec3_t(0.007, 0.006, 0.003), dymp::vec3_t( 0.003, -0.000,  0.042), -1,  3, 15, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ey);
-		
-	wb->links[ 5] = dymp::Wholebody::Link( 1.888, dymp::vec3_t(0.003, 0.003, 0.004), dymp::vec3_t( 0.000,  0.017,  0.003), -1,  2, 24, dymp::vec3_t( 0.000, -0.180,  0.330), dymp::ey);
-	wb->links[ 6] = dymp::Wholebody::Link( 0.255, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000,  0.000, -0.026), -1,  5, 25, dymp::vec3_t( 0.000,  0.000, -0.040), dymp::ex);
-	wb->links[ 7] = dymp::Wholebody::Link( 2.423, dymp::vec3_t(0.135, 0.135, 0.004), dymp::vec3_t(-0.015,  0.000, -0.214), -1,  6, 26, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ez);
-	wb->links[ 8] = dymp::Wholebody::Link( 0.198, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000,  0.000, -0.024), -1,  7, 27, dymp::vec3_t( 0.020,  0.000, -0.260), dymp::ey);
-	wb->links[ 9] = dymp::Wholebody::Link( 1.422, dymp::vec3_t(0.047, 0.046, 0.001), dymp::vec3_t( 0.004,  0.000, -0.167), -1,  8, 28, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ez);
-	wb->links[10] = dymp::Wholebody::Link( 0.066, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000,  0.000, -0.013), -1,  9, 29, dymp::vec3_t( 0.000,  0.000, -0.230), dymp::ex);
-	wb->links[11] = dymp::Wholebody::Link( 1.601, dymp::vec3_t(0.022, 0.024, 0.003), dymp::vec3_t(-0.014,  0.000, -0.106), -1, 10, 30, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ez);
-    wb->links[12] = dymp::Wholebody::Link( 0.040, dymp::vec3_t(0.001, 0.001, 0.001), dymp::vec3_t( 0.000,  0.000,  0.000),  1, 11, 31, dymp::vec3_t( 0.000, -0.020, -0.083), dymp::ex);
-		
-	wb->links[13] = dymp::Wholebody::Link( 1.888, dymp::vec3_t(0.003, 0.003, 0.004), dymp::vec3_t( 0.000, -0.017,  0.003), -1,  2, 16, dymp::vec3_t( 0.000,  0.180,  0.330), dymp::ey);
-	wb->links[14] = dymp::Wholebody::Link( 0.255, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000,  0.000, -0.026), -1, 13, 17, dymp::vec3_t( 0.000,  0.000, -0.040), dymp::ex);
-	wb->links[15] = dymp::Wholebody::Link( 2.423, dymp::vec3_t(0.135, 0.135, 0.004), dymp::vec3_t(-0.015,  0.000, -0.214), -1, 14, 18, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ez);
-	wb->links[16] = dymp::Wholebody::Link( 0.198, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000,  0.000, -0.024), -1, 15, 19, dymp::vec3_t( 0.020,  0.000, -0.260), dymp::ey);
-	wb->links[17] = dymp::Wholebody::Link( 1.422, dymp::vec3_t(0.047, 0.046, 0.001), dymp::vec3_t( 0.004,  0.000, -0.167), -1, 16, 20, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ez);
-	wb->links[18] = dymp::Wholebody::Link( 0.066, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000,  0.000, -0.013), -1, 17, 21, dymp::vec3_t( 0.000,  0.000, -0.230), dymp::ex);
-	wb->links[19] = dymp::Wholebody::Link( 1.601, dymp::vec3_t(0.022, 0.024, 0.003), dymp::vec3_t(-0.014,  0.000, -0.106), -1, 18, 22, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ez);
-	wb->links[20] = dymp::Wholebody::Link( 0.040, dymp::vec3_t(0.001, 0.001, 0.001), dymp::vec3_t( 0.000,  0.000,  0.000),  2, 19, 23, dymp::vec3_t( 0.000,  0.020, -0.083), dymp::ex);
-
-	wb->links[21] = dymp::Wholebody::Link( 0.736, dymp::vec3_t(0.001, 0.001, 0.000), dymp::vec3_t(-0.011,  0.000, -0.020), -1,  0,  8, dymp::vec3_t( 0.000, -0.080, -0.000), dymp::ez);
-	wb->links[22] = dymp::Wholebody::Link( 0.038, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000,  0.000,  0.000), -1, 21,  9, dymp::vec3_t( 0.000,  0.000, -0.055), dymp::ex);
-	wb->links[23] = dymp::Wholebody::Link( 3.086, dymp::vec3_t(0.153, 0.152, 0.007), dymp::vec3_t( 0.007,  0.001, -0.199), -1, 22, 10, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ey);
-	wb->links[24] = dymp::Wholebody::Link( 3.127, dymp::vec3_t(0.105, 0.107, 0.006), dymp::vec3_t( 0.001,  0.000, -0.140), -1, 23, 11, dymp::vec3_t( 0.000,  0.000, -0.360), dymp::ey);
-	wb->links[25] = dymp::Wholebody::Link( 0.063, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000,  0.000,  0.000), -1, 24, 12, dymp::vec3_t( 0.000,  0.000, -0.360), dymp::ex);
-	wb->links[26] = dymp::Wholebody::Link( 1.297, dymp::vec3_t(0.008, 0.011, 0.005), dymp::vec3_t( 0.003,  0.000, -0.066),  3, 25, 13, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ey);
-
-	wb->links[27] = dymp::Wholebody::Link( 0.736, dymp::vec3_t(0.001, 0.001, 0.000), dymp::vec3_t(-0.011,  0.000, -0.020), -1,  0,  0, dymp::vec3_t( 0.000,  0.080,  0.000), dymp::ez);
-	wb->links[28] = dymp::Wholebody::Link( 0.038, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000,  0.000,  0.000), -1, 27,  1, dymp::vec3_t( 0.000,  0.000, -0.055), dymp::ex);
-	wb->links[29] = dymp::Wholebody::Link( 3.086, dymp::vec3_t(0.153, 0.152, 0.007), dymp::vec3_t( 0.007, -0.001, -0.199), -1, 28,  2, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ey);
-	wb->links[30] = dymp::Wholebody::Link( 3.127, dymp::vec3_t(0.105, 0.107, 0.006), dymp::vec3_t( 0.001,  0.000, -0.140), -1, 29,  3, dymp::vec3_t( 0.000,  0.000, -0.360), dymp::ey);
-	wb->links[31] = dymp::Wholebody::Link( 0.063, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000,  0.000,  0.000), -1, 30,  4, dymp::vec3_t( 0.000,  0.000, -0.360), dymp::ex);
-	wb->links[32] = dymp::Wholebody::Link( 1.297, dymp::vec3_t(0.008, 0.011, 0.005), dymp::vec3_t( 0.003,  0.000, -0.066),  4, 31,  5, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ey);
     /*
-   	*/
+	*/
+
     const real_t Ir = 0.1;
     for(auto& jnt : wb->joints)
         jnt.rotor_inertia = Ir;
