@@ -3,5 +3,11 @@ lateral_hip_joint_offset  :  0.08
 lateral_knee_offset       :  0.0
 thigh_length              :  0.36
 shank_length              :  0.36
-hand_offset0          : [0.0, -0.35, -0.15]
-hand_offset1          : [0.0,  0.35, -0.15]
+ankle_to_foot0            : [0.0,  0.0, -0.104]
+ankle_to_foot1            : [0.0,  0.0, -0.104]
+model_filename            : "RHPS1/RHPS1.body"
+leg_joint_indices0        : [8, 9, 10, 11, 12, 13]
+leg_joint_indices1        : [0, 1, 2, 3, 4, 5]
+foot_link_index0          : 26
+foot_link_index1          : 32
+stand_still_joint_angle   : [0, 0, -0.5, 1.0, 0, -0.5,  0, 0,  0, 0, -0.5, 1.0, 0, -0.5,  0, 0,  0.5, 0, 0, 1.0, 0, 0, 0, 0,  0.5, 0, 0, 1.0, 0, 0, 0, 0]

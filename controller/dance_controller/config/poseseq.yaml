@@ -1,3 +1,5 @@
+base_link_name       : "WAIST"
+end_link_name        : ["R_ANKLE_P", "L_ANKLE_P"]
 play_speed           : 1.0
 min_contact_duration : 0.05
 max_duration         : 10.0

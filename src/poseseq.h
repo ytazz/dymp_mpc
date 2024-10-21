@@ -63,6 +63,8 @@ public:
     double  maxDuration;
     int     initialPhase;
     string  pseqFile;
+    string  baseLinkName;
+    vector<string>  endLinkName;
     
     MyRobot*     robot;
     vector<Key>  keys;

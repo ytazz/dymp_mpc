@@ -89,5 +89,13 @@ inline void ReadVectorDouble(std::vector<double>& v, const YAML::Node& node){
         v.push_back(elem.as<double>());
 }
 
+inline void ReadVectorString(std::vector<std::string>& v, const YAML::Node& node){
+    if(!node.IsDefined() || !node.IsSequence())
+        return;
+
+    for(auto&& elem : node)
+        v.push_back(elem.as<std::string>());
+}
+
 }
 }

@@ -3,64 +3,41 @@
 
 #include <rollpitchyaw.h>
 
+#include <cnoid/ExecutablePath>
+
 namespace dymp{
 namespace mpc{
 
 Kinematics::Kinematics(){
-    armBase[0]     = dymp::vec3_t(0.0, -0.1,  0.1);
-	armBase[1]     = dymp::vec3_t(0.0,  0.1 ,  0.1);
-	legBase[0]     = dymp::vec3_t(0.0, -0.075 , -0.1);
-	legBase[1]     = dymp::vec3_t(0.0,  0.075 , -0.1);
-	wristToHand[0] = dymp::vec3_t(0.0,  0.0 ,  0.0);
-	wristToHand[1] = dymp::vec3_t(0.0,  0.0 ,  0.0);
-	ankleToFoot[0] = dymp::vec3_t(0.0,  0.0 , -0.05);
+    ankleToFoot[0] = dymp::vec3_t(0.0,  0.0 , -0.05);
 	ankleToFoot[1] = dymp::vec3_t(0.0,  0.0 , -0.05);
-	elbowYaw[0]    = 0.0;
-	elbowYaw[1]    = 0.0;
-	torsoLength    = 0.2;
-	headOffset     = 0.3;
-	upperArmLength = 0.2;
-	lowerArmLength = 0.2;
-	upperLegLength = 0.35;
-	lowerLegLength = 0.35;
-    handOffset[0]  = dymp::vec3_t(0.0, -0.20, -0.1);
-    handOffset[1]  = dymp::vec3_t(0.0,  0.20, -0.1);
 }
 
 void Kinematics::Read(const YAML::Node& node){
-	ReadVector3(armBase[0]        , node["arm_base0"]);
-	ReadVector3(armBase[1]        , node["arm_base1"]);
-	ReadVector3(legBase[0]        , node["leg_base0"]);
-	ReadVector3(legBase[1]        , node["leg_base1"]);
-	ReadVector3(wristToHand[0]    , node["wrist_to_hand0"]);
-	ReadVector3(wristToHand[1]    , node["wrist_to_hand1"]);
-	ReadVector3(ankleToFoot[0]    , node["ankle_to_foot0"]);
-	ReadVector3(ankleToFoot[1]    , node["ankle_to_foot1"]);
-	ReadDouble (elbowYaw[0]       , node["elbow_yaw0"  ]);
-	ReadDouble (elbowYaw[1]       , node["elbow_yaw1"  ]);
-	ReadDouble (torsoLength       , node["torso_length"]);
-	ReadDouble (headOffset        , node["head_offset" ]);
-	ReadDouble (upperArmLength    , node["upper_arm_length"]);
-	ReadDouble (lowerArmLength    , node["lower_arm_length"]);
-	ReadDouble (upperLegLength    , node["upper_leg_length"]);
-	ReadDouble (lowerLegLength    , node["lower_leg_length"]);
-    ReadVector3(handOffset[0]     , node["hand_offset0"]);
-    ReadVector3(handOffset[1]     , node["hand_offset1"]);
-
-    ReadDouble(verticalHipJointOffset, node["vertical_hip_joint_offset"]);
+	ReadDouble(verticalHipJointOffset, node["vertical_hip_joint_offset"]);
     ReadDouble(lateralHipJointOffset , node["lateral_hip_joint_offset"]);
     ReadDouble(lateralKneeOffset     , node["lateral_knee_offset"]);
     ReadDouble(thighLength           , node["thigh_length"]);
     ReadDouble(shankLength           , node["shank_length"]);
+
+    ReadString(modelFilename, node["model_filename"]);
+    ReadVectorInt(legJointIndices[0], node["leg_joint_indices0"]);
+    ReadVectorInt(legJointIndices[1], node["leg_joint_indices1"]);
+    ReadInt(footLinkIndex[0], node["foot_link_index0"]);
+    ReadInt(footLinkIndex[1], node["foot_link_index1"]);
+    ReadVector3(ankleToFoot[0], node["ankle_to_foot0"]);
+	ReadVector3(ankleToFoot[1], node["ankle_to_foot1"]);
+	ReadVectorDouble(standStillJointAngle, node["stand_still_joint_angle"]);
 }
 
 void Kinematics::Init(dymp::Wholebody* wb){
+    LoadLinksFromBody(wb);
+    /*
+    // manual setup
+    // kinematic and inertial parameters of sample robot
     wb->links .resize(Link ::Num);
 	wb->joints.resize(Link ::Num - 1);
-	wb->ends  .resize(End  ::Num);
-		
-    // kinematic and inertial parameters of sample robot
-    wb->links[ 0] = dymp::Wholebody::Link( 4.200, dymp::vec3_t(0.030, 0.030, 0.030), dymp::vec3_t( 0.000,  0.000,  0.000), -1, -1, -1, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::zero3);
+	wb->links[ 0] = dymp::Wholebody::Link( 4.200, dymp::vec3_t(0.030, 0.030, 0.030), dymp::vec3_t( 0.000,  0.000,  0.000), -1, -1, -1, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::zero3);
 	wb->links[ 1] = dymp::Wholebody::Link( 0.600, dymp::vec3_t(0.001, 0.001, 0.001), dymp::vec3_t( 0.000,  0.000,  0.000), -1,  0,  6, dymp::vec3_t( 0.000,  0.000,  0.145), dymp::ez);
 	wb->links[ 2] = dymp::Wholebody::Link(18.800, dymp::vec3_t(1.000, 1.000, 0.300), dymp::vec3_t(-0.050,  0.000,  0.200),  0,  1,  7, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ey);
 	wb->links[ 3] = dymp::Wholebody::Link( 0.100, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000,  0.000,  0.000), -1,  2, 14, dymp::vec3_t( 0.000,  0.000,  0.450), dymp::ez);
@@ -97,19 +74,80 @@ void Kinematics::Init(dymp::Wholebody* wb){
 	wb->links[30] = dymp::Wholebody::Link( 3.100, dymp::vec3_t(0.100, 0.100, 0.006), dymp::vec3_t( 0.000,  0.000, -0.140), -1, 29,  3, dymp::vec3_t( 0.000,  0.000, -0.360), dymp::ey);
 	wb->links[31] = dymp::Wholebody::Link( 0.060, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000,  0.000,  0.000), -1, 30,  4, dymp::vec3_t( 0.000,  0.000, -0.360), dymp::ex);
 	wb->links[32] = dymp::Wholebody::Link( 1.300, dymp::vec3_t(0.010, 0.010, 0.005), dymp::vec3_t( 0.000,  0.000,  0.000),  4, 31,  5, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ey);
-    /*
-	*/
 
     const real_t Ir = 0.1;
     for(auto& jnt : wb->joints)
         jnt.rotor_inertia = Ir;
+    */
 
     // ilink, offset, rotation, force, moment
-	wb->ends[0] = dymp::Wholebody::End(Link::ChestP, dymp::vec3_t( 0.000,  0.000,  0.000), true , true , false, false, false);
-	wb->ends[1] = dymp::Wholebody::End(Link::HandRR, dymp::vec3_t( 0.000,  0.000,  0.000), true , true , false, false, false);
-	wb->ends[2] = dymp::Wholebody::End(Link::HandLR, dymp::vec3_t( 0.000,  0.000,  0.000), true , true , false, false, false);
-	wb->ends[3] = dymp::Wholebody::End(Link::FootRP, dymp::vec3_t( 0.000,  0.000, -0.104), true , true , true , true , true );
-	wb->ends[4] = dymp::Wholebody::End(Link::FootLP, dymp::vec3_t( 0.000,  0.000, -0.104), true , true , true , true , true );
+	//wb->ends  .resize(End  ::Num);
+	//wb->ends[0] = dymp::Wholebody::End(Link::ChestP, dymp::vec3_t( 0.000,  0.000,  0.000), true , true , false, false, false);
+	//wb->ends[1] = dymp::Wholebody::End(Link::HandRR, dymp::vec3_t( 0.000,  0.000,  0.000), true , true , false, false, false);
+	//wb->ends[2] = dymp::Wholebody::End(Link::HandLR, dymp::vec3_t( 0.000,  0.000,  0.000), true , true , false, false, false);
+	//wb->ends[3] = dymp::Wholebody::End(Link::FootRP, dymp::vec3_t( 0.000,  0.000, -0.104), true , true , true , true , true );
+	//wb->ends[4] = dymp::Wholebody::End(Link::FootLP, dymp::vec3_t( 0.000,  0.000, -0.104), true , true , true , true , true );
+    wb->ends.resize(End  ::Num);
+	wb->ends[0] = dymp::Wholebody::End(footLinkIndex[0], ankleToFoot[0], true , true , true , true , true );
+	wb->ends[1] = dymp::Wholebody::End(footLinkIndex[1], ankleToFoot[1], true , true , true , true , true );
+
+}
+
+void Kinematics::LoadLinksFromBody(dymp::Wholebody* wb){
+    string path = cnoid::shareDir() + "/model/" + modelFilename;
+
+    YAML::Node node = YAML::LoadFile(path);
+
+    std::map<std::string, int>  name_to_id;
+    std::vector<std::string>    parents;
+
+    YAML::Node linksNode = node["links"];
+    for(auto&& linkNode : linksNode){
+        dymp::Wholebody::Link  lnk;
+
+        string jointType;
+        ReadString(jointType, linkNode["joint_type"]);
+        if(jointType == "free"){
+            // this must be root link
+            lnk.iparent = -1;
+            lnk.ijoint  = -1;
+
+        }
+        if(jointType == "revolute"){
+            ReadVector3(lnk.trn   , linkNode["translation"]);
+            ReadVector3(lnk.axis  , linkNode["joint_axis" ]);
+            ReadInt    (lnk.ijoint, linkNode["joint_id"   ]);
+
+            if(wb->joints.size() <= lnk.ijoint){
+                wb->joints.resize(lnk.ijoint + 1);
+            }
+            ReadDouble(wb->joints[lnk.ijoint].rotor_inertia, linkNode["joint_axis_inertia"]);
+        }
+        if(jointType == "fixed"){
+            // skip fix joints
+            continue;
+        }
+
+        string name, parent;
+        ReadString(name  , linkNode["name"  ]);
+        ReadString(parent, linkNode["parent"]);
+
+        ReadDouble (lnk.mass   , linkNode["mass"]);
+        ReadVector3(lnk.center , linkNode["center_of_mass"]);
+        ReadMatrix3(lnk.inertia, linkNode["inertia"]);
+
+        name_to_id[name] = (int)wb->links.size();
+        parents.push_back(parent);
+
+        wb->links.push_back(lnk);
+    }
+
+    for(int i = 0; i < (int)wb->links.size(); i++){
+        wb->links[i].iparent = name_to_id[parents[i]];
+        wb->links[i].iend    = -1;
+    }
+
+    int hoge = 0;
 }
 
 void Kinematics::SetupStandStill(dymp::Wholebody* wb, dymp::WholebodyData& d){
@@ -127,17 +165,11 @@ void Kinematics::SetupStandStill(dymp::Wholebody* wb, dymp::WholebodyData& d){
     int njoint = (int)wb->joints.size();
     for(int i = 0; i < njoint; i++){
         dymp::WholebodyData::Joint& djnt = d.joints[i];
-        djnt.q    = 0.0;
+        djnt.q    = standStillJointAngle[i];
         djnt.qd   = 0.0;
         djnt.qdd  = 0.0;
         djnt.qddd = 0.0;
     }
-	// bend elbow
-    d.joints[Joint::UpperArmRP].q = 0.5; d.joints[Joint::LowerArmRP].q = -1.0;
-    d.joints[Joint::UpperArmLP].q = 0.5; d.joints[Joint::LowerArmLP].q = -1.0;
-    // bend knee
-    d.joints[Joint::UpperLegRP].q = -0.5; d.joints[Joint::LowerLegRP].q = 1.0; d.joints[Joint::FootRP].q = -0.5;
-    d.joints[Joint::UpperLegLP].q = -0.5; d.joints[Joint::LowerLegLP].q = 1.0; d.joints[Joint::FootLP].q = -0.5;
 
     dymp::vec3_t pe = dymp::zero3;
     dymp::quat_t qe = dymp::unit_quat();
@@ -147,27 +179,27 @@ void Kinematics::SetupStandStill(dymp::Wholebody* wb, dymp::WholebodyData& d){
     for(int i = 0; i < End::Num; i++){
         dymp::WholebodyData::End&  dend = d.ends[i];
         
-        if(i == End::ChestP){
-            dend.pos_t_abs = pc + qf*dymp::vec3_t(0.0, 0.0, torsoLength);
-            dend.pos_r_abs = qf;
-            dend.vel_t_abs = vc + wf.cross(qf*dymp::vec3_t(0.0, 0.0, torsoLength));
-            dend.vel_r_abs = wf;
-            dend.state = dymp::Wholebody::ContactState::Free;
-        }
-        if(i == End::HandR){
-            dend.pos_t_abs = pc + qf*handOffset[0];
-            dend.pos_r_abs = qf;
-            dend.vel_t_abs = vc + wf.cross(qf*handOffset[0]);
-            dend.vel_r_abs = wf;
-            dend.state = dymp::Wholebody::ContactState::Free;
-        }
-        if(i == End::HandL){
-            dend.pos_t_abs = pc + qf*handOffset[1];
-            dend.pos_r_abs = qf;
-            dend.vel_t_abs = vc + wf.cross(qf*handOffset[1]);
-            dend.vel_r_abs = wf;
-            dend.state = dymp::Wholebody::ContactState::Free;
-        }
+        //if(i == End::ChestP){
+        //    dend.pos_t_abs = pc + qf*dymp::vec3_t(0.0, 0.0, torsoLength);
+        //    dend.pos_r_abs = qf;
+        //    dend.vel_t_abs = vc + wf.cross(qf*dymp::vec3_t(0.0, 0.0, torsoLength));
+        //    dend.vel_r_abs = wf;
+        //    dend.state = dymp::Wholebody::ContactState::Free;
+        //}
+        //if(i == End::HandR){
+        //    dend.pos_t_abs = pc + qf*handOffset[0];
+        //    dend.pos_r_abs = qf;
+        //    dend.vel_t_abs = vc + wf.cross(qf*handOffset[0]);
+        //    dend.vel_r_abs = wf;
+        //    dend.state = dymp::Wholebody::ContactState::Free;
+        //}
+        //if(i == End::HandL){
+        //    dend.pos_t_abs = pc + qf*handOffset[1];
+        //    dend.pos_r_abs = qf;
+        //    dend.vel_t_abs = vc + wf.cross(qf*handOffset[1]);
+        //    dend.vel_r_abs = wf;
+        //    dend.state = dymp::Wholebody::ContactState::Free;
+        //}
         if(i == End::FootR || i == End::FootL){
             bool   contact = true;
             pe = dymp::vec3_t(0.0, (i == End::FootR ? -0.08 : 0.08), 0.0);
@@ -240,29 +272,29 @@ void Kinematics::SetupFromCentroid(real_t t, dymp::Centroid* centroid, const vec
     for(int i = 0; i < End::Num; i++){
         dymp::WholebodyData::End&  dend = d.ends[i];
         
-        if(i == End::ChestP){
-            dend.pos_t_abs = d.centroid.pos_t + d.centroid.pos_r*dymp::vec3_t(0.0, 0.0, torsoLength);
-            dend.pos_r_abs = d.centroid.pos_r;
-            dend.vel_t_abs = d.centroid.vel_t + d.centroid.vel_r.cross(d.centroid.pos_r*dymp::vec3_t(0.0, 0.0, torsoLength));
-            dend.vel_r_abs = d.centroid.vel_r;
-            dend.state = dymp::Wholebody::ContactState::Free;
-        }
-        if(i == End::HandR){
-            dend.pos_t_abs = d.centroid.pos_t + d.centroid.pos_r*handOffset[0];
-            dend.pos_r_abs = d.centroid.pos_r;
-            dend.vel_t_abs = d.centroid.vel_t + d.centroid.vel_r.cross(d.centroid.pos_r*handOffset[0]);
-            dend.vel_r_abs = d.centroid.vel_r;
-            dend.state = dymp::Wholebody::ContactState::Free;
-        }
-        if(i == End::HandL){
-            dend.pos_t_abs = d.centroid.pos_t + d.centroid.pos_r*handOffset[1];
-            dend.pos_r_abs = d.centroid.pos_r;
-            dend.vel_t_abs = d.centroid.vel_t + d.centroid.vel_r.cross(d.centroid.pos_r*handOffset[1]);
-            dend.vel_r_abs = d.centroid.vel_r;
-            dend.state = dymp::Wholebody::ContactState::Free;
-        }
+        //if(i == End::ChestP){
+        //    dend.pos_t_abs = d.centroid.pos_t + d.centroid.pos_r*dymp::vec3_t(0.0, 0.0, torsoLength);
+        //    dend.pos_r_abs = d.centroid.pos_r;
+        //    dend.vel_t_abs = d.centroid.vel_t + d.centroid.vel_r.cross(d.centroid.pos_r*dymp::vec3_t(0.0, 0.0, torsoLength));
+        //    dend.vel_r_abs = d.centroid.vel_r;
+        //    dend.state = dymp::Wholebody::ContactState::Free;
+        //}
+        //if(i == End::HandR){
+        //    dend.pos_t_abs = d.centroid.pos_t + d.centroid.pos_r*handOffset[0];
+        //    dend.pos_r_abs = d.centroid.pos_r;
+        //    dend.vel_t_abs = d.centroid.vel_t + d.centroid.vel_r.cross(d.centroid.pos_r*handOffset[0]);
+        //    dend.vel_r_abs = d.centroid.vel_r;
+        //    dend.state = dymp::Wholebody::ContactState::Free;
+        //}
+        //if(i == End::HandL){
+        //    dend.pos_t_abs = d.centroid.pos_t + d.centroid.pos_r*handOffset[1];
+        //    dend.pos_r_abs = d.centroid.pos_r;
+        //    dend.vel_t_abs = d.centroid.vel_t + d.centroid.vel_r.cross(d.centroid.pos_r*handOffset[1]);
+        //    dend.vel_r_abs = d.centroid.vel_r;
+        //    dend.state = dymp::Wholebody::ContactState::Free;
+        //}
         if(i == End::FootR || i == End::FootL){
-            dymp::CentroidData::End&  dend_cen = d_cen.ends[i-3];
+            dymp::CentroidData::End&  dend_cen = d_cen.ends[i];
 			if(dend_cen.iface == -1){
                 dend.force_t = dymp::zero3;
                 dend.force_r = dymp::zero3;
@@ -303,13 +335,13 @@ void Kinematics::Convert(const dymp::WholebodyData& d_wb, dymp::CentroidData& d,
 
         int nend = (int)d.ends.size();
         for(int i = 0; i < nend; i++){
-            d.ends[i].pos_t  = d_wb.ends[i+3].pos_t_abs;
-            d.ends[i].pos_r  = d_wb.ends[i+3].pos_r_abs;
-            d.ends[i].vel_t  = d_wb.ends[i+3].vel_t_abs;
-            d.ends[i].vel_r  = d_wb.ends[i+3].vel_r_abs;
-            d.ends[i].iface  = (d_wb.ends[i+3].state == dymp::Wholebody::ContactState::Free ? -1 : 0);
-            d.ends[i].state  =  d_wb.ends[i+3].state;
-            d.ends[i].pos_tc =  d_wb.ends[i+3].pos_te;
+            d.ends[i].pos_t  = d_wb.ends[i].pos_t_abs;
+            d.ends[i].pos_r  = d_wb.ends[i].pos_r_abs;
+            d.ends[i].vel_t  = d_wb.ends[i].vel_t_abs;
+            d.ends[i].vel_r  = d_wb.ends[i].vel_r_abs;
+            d.ends[i].iface  = (d_wb.ends[i].state == dymp::Wholebody::ContactState::Free ? -1 : 0);
+            d.ends[i].state  =  d_wb.ends[i].state;
+            d.ends[i].pos_tc =  d_wb.ends[i].pos_te;
         }
     }
 

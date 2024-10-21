@@ -295,7 +295,7 @@ void PlannerWholebody::Observe(){
         data_cur.joints[i].qd = robot->joint[i].dq;
     }
     for(int i = 0; i < 2; i++){
-        dymp::WholebodyData::End& dend = data_cur.ends[3+i];
+        dymp::WholebodyData::End& dend = data_cur.ends[i];
 
         dend.force_t = dend.pos_r*robot->foot[i].force ;
         dend.force_r = dend.pos_r*robot->foot[i].moment;
@@ -468,9 +468,9 @@ void PlannerWholebody::UpdateInput(){
             dymp::real_t fz = dend.force_t.z();
 
             // limit by measured force
-            if(i == 3 || i == 4){
-                fz = std::max(0.0, std::min(fz, robot->foot[i-3].force.z()));
-            }
+            //if(i == 3 || i == 4){
+            fz = std::max(0.0, std::min(fz, robot->foot[i].force.z()));
+            //}
             // enforce contact force constraint
             dymp::vec3_t flocal = dend.pos_r.conjugate()*dend.force_t;
             dymp::vec3_t mlocal = dend.pos_r.conjugate()*dend.force_r;
@@ -569,8 +569,8 @@ void PlannerWholebody::GetDesiredState(int k, dymp::real_t t, dymp::WholebodyDat
 
     bool is_initial  = k == 0;
     bool is_terminal = k == N;
-    bool is_flight   = (d.ends[3].state == dymp::Wholebody::ContactState::Free &&
-                        d.ends[4].state == dymp::Wholebody::ContactState::Free);
+    bool is_flight   = (d.ends[0].state == dymp::Wholebody::ContactState::Free &&
+                        d.ends[1].state == dymp::Wholebody::ContactState::Free);
 
     int nend   = (int)d.ends.size();
 
@@ -628,18 +628,18 @@ void PlannerWholebody::GetDesiredState(int k, dymp::real_t t, dymp::WholebodyDat
             dymp::real_t wf = (dend.state == dymp::Wholebody::ContactState::Free ? freeWeight : 1.0);
         
             // end-specific weight scale
-            if(i == Kinematics::End::ChestP){
-                dend.pos_t_weight = dymp::zero3;
-                dend.pos_r_weight = torsoOriWeight;
-                dend.vel_t_weight = dymp::zero3;
-                dend.vel_r_weight = torsoAngvelWeight;
-            }
-            if(i == Kinematics::End::HandR || i == Kinematics::End::HandL){
-                dend.pos_t_weight = handPosWeight   ;
-                dend.pos_r_weight = handOriWeight   ;
-                dend.vel_t_weight = handVelWeight   ;
-                dend.vel_r_weight = handAngvelWeight;
-            }
+            //if(i == Kinematics::End::ChestP){
+            //    dend.pos_t_weight = dymp::zero3;
+            //    dend.pos_r_weight = torsoOriWeight;
+            //    dend.vel_t_weight = dymp::zero3;
+            //    dend.vel_r_weight = torsoAngvelWeight;
+            //}
+            //if(i == Kinematics::End::HandR || i == Kinematics::End::HandL){
+            //    dend.pos_t_weight = handPosWeight   ;
+            //    dend.pos_r_weight = handOriWeight   ;
+            //    dend.vel_t_weight = handVelWeight   ;
+            //    dend.vel_r_weight = handAngvelWeight;
+            //}
             if(i == Kinematics::End::FootR || i == Kinematics::End::FootL){
                 dend.pos_t_weight = wf*(dend.state == dymp::Wholebody::ContactState::Free ? 1.0 : 1.0)*footPosWeight   ;
                 dend.pos_r_weight = wf*(dend.state == dymp::Wholebody::ContactState::Free ? 1.0 : 1.0)*footOriWeight   ;
@@ -667,7 +667,7 @@ void PlannerWholebody::ToRobot(){
             robot->joint[i].dq_ref = data_ref.joints[i].qd ;
             robot->joint[i].u_ref  = data_cur.joints[i].tau;
         }
-        
+        /*
         // prevent joint buckling
         const int knee_joints[] = {
             Kinematics::Joint::LowerLegLP, 
@@ -681,6 +681,7 @@ void PlannerWholebody::ToRobot(){
                 printf("buckle warning!\n");
             }
         }
+        */
     }
 
 	//Planner::ToRobot();
@@ -869,9 +870,9 @@ void PlannerWholebody::Visualize(cnoid::vnoid::Visualizer* viz, VizInfo& info){
 
             for(int i = 1; i < nlink; i++){
                 // skip leg links of desired pose
+                /*
                 if(item == 1 && (Kinematics::Link::UpperLegRY <= i && i <= Kinematics::Link::FootLP))
                     continue;
-                /*
                 */
 
                 int ip = wb->links[i].iparent;

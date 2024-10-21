@@ -236,7 +236,7 @@ void MyRobot::SaveLog(){
         L_local = d->centroid.L_local;
         
         for(int j = 0; j < 2; j++){
-            dymp::WholebodyData::End& dend = d->ends[j+3];
+            dymp::WholebodyData::End& dend = d->ends[j];
             if(i == 0 || i == 1){
                 pe[j] = dend.pos_t_abs;
                 qe[j] = dend.pos_r_abs;

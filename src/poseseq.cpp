@@ -53,6 +53,8 @@ void Poseseq::Read(const YAML::Node& node){
     ReadDouble(maxDuration       , node["max_duration"]        );
     ReadInt   (initialPhase      , node["initial_phase"]       );
     ReadString(pseqFile          , node["pseq_file"]           );
+    ReadString(baseLinkName      , node["base_link_name"]      );
+    ReadVectorString(endLinkName , node["end_link_name"]       );
 }
 
 bool Poseseq::Load(const YAML::Node& node){
@@ -115,19 +117,16 @@ void Poseseq::Init(){
     int njoint = wb->joints.size();
     int nend   = wb->ends.size();
 
-    string baseName = "WAIST";
-    vector<string>  endNames = {"", "", "", "R_ANKLE_P", "L_ANKLE_P"};
-
     for(Key& key : keys){
         key.pose.endIndex  .resize(nend  , -1);
         key.pose.baseIndex = -1;
 
         for(int j = 0; j < (int)key.pose.ikLinks.size(); j++){
-            for(int i = 0; i < (int)endNames.size(); i++){
-                if(key.pose.ikLinks[j].name == endNames[i])
+            for(int i = 0; i < (int)endLinkName.size(); i++){
+                if(key.pose.ikLinks[j].name == endLinkName[i])
                     key.pose.endIndex[i] = j;
             }
-            if(key.pose.ikLinks[j].name == baseName){
+            if(key.pose.ikLinks[j].name == baseLinkName){
                 key.pose.baseIndex = j;
             }
         }
@@ -628,15 +627,10 @@ void Poseseq::Setup(double t, dymp::Wholebody* wb, dymp::WholebodyData& d){
         dend.vel_t_abs = ve;
         dend.vel_r_abs = we;
 
-        if(i == 3 || i == 4){
-            // calc leg joint angles by IK
-            int jleg[2][6] = { {8,9,10,11,12,13}, {0,1,2,3,4,5} };
-
-            vector<double> qleg;
-            robot->kinematics->CalcIK(qbase.conjugate()*(pe - pbase), qbase.conjugate()*dend.pos_r_abs, (i == 3 ? -1.0 : +1.0), qleg);
-            for(int j = 0; j < 6; j++){
-                d.joints[jleg[i-3][j]].q = qleg[j];
-            }
+        vector<double> qleg;
+        robot->kinematics->CalcIK(qbase.conjugate()*(pe - pbase), qbase.conjugate()*dend.pos_r_abs, (i == 0 ? -1.0 : +1.0), qleg);
+        for(int j = 0; j < 6; j++){
+            d.joints[robot->kinematics->legJointIndices[i][j]].q = qleg[j];
         }
     }
     
