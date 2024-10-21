@@ -90,8 +90,8 @@ items:
           class: BodyItem
           is_checked: true
           data:
-            #file: "../model/dymp_mpc_sample_robot1/sample_robot1.body"
-            file: "../model/RHPS1/RHPS1.body"
+            file: "../model/dymp_mpc_sample_robot1/sample_robot1.body"
+            #file: "../model/RHPS1/RHPS1.body"
             format: CHOREONOID-BODY
             # intro
             initialRootPosition: [ 0, 0, 0.843 ]
