@@ -463,13 +463,13 @@ void Poseseq::Setup(double t, dymp::Wholebody* wb, dymp::WholebodyData& d){
     // joint
     for(int i = 0; i < njoint; i++){
         if(k0.jointPrev [i] == -1){
-            d.q  [i] = 0.0;
-            d.qd [i] = 0.0;
+            d.joints[i].q  = 0.0;
+            d.joints[i].qd = 0.0;
         }
         else if(k0.jointPrev[i] == k1.jointNext[i] || k1.jointNext[i] == -1){
             Key& kprev = keys[k0.jointPrev[i]];
-            d.q [i] = kprev.pose.q[kprev.pose.jointIndex[i]];
-            d.qd[i] = 0.0;
+            d.joints[i].q  = kprev.pose.q[kprev.pose.jointIndex[i]];
+            d.joints[i].qd = 0.0;
         }
         else{
             Key& kprev = keys[k0.jointPrev[i]];
@@ -490,12 +490,12 @@ void Poseseq::Setup(double t, dymp::Wholebody* wb, dymp::WholebodyData& d){
             h  = t1 - t0;
             s  = std::min(std::max(0.0, (t - t0)/(t1 - t0)), 1.0);
     
-            d.q [i] = (1-s)*q0 + s*q1;
-            d.qd[i] = (q1 - q0)/h;
+            d.joints[i].q  = (1-s)*q0 + s*q1;
+            d.joints[i].qd = (q1 - q0)/h;
             //d.qd[i] = 0.0;
         }
-        d.qdd [i] = 0.0;
-        d.qddd[i] = 0.0;
+        d.joints[i].qdd  = 0.0;
+        d.joints[i].qddd = 0.0;
     }
 
     // end
@@ -635,7 +635,7 @@ void Poseseq::Setup(double t, dymp::Wholebody* wb, dymp::WholebodyData& d){
             vector<double> qleg;
             robot->kinematics->CalcIK(qbase.conjugate()*(pe - pbase), qbase.conjugate()*dend.pos_r_abs, (i == 3 ? -1.0 : +1.0), qleg);
             for(int j = 0; j < 6; j++){
-                d.q[jleg[i-3][j]] = qleg[j];
+                d.joints[jleg[i-3][j]].q = qleg[j];
             }
         }
     }

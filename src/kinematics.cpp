@@ -60,7 +60,8 @@ void Kinematics::Init(dymp::Wholebody* wb){
 	wb->ends  .resize(End  ::Num);
 		
     // kinematic and inertial parameters of sample robot
-    wb->links[ 0] = dymp::Wholebody::Link( 4.200, dymp::vec3_t(0.030, 0.030, 0.030), dymp::vec3_t( 0.000,  0.000,  0.000), -1, -1, -1, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::zero3);
+    /*
+	wb->links[ 0] = dymp::Wholebody::Link( 4.200, dymp::vec3_t(0.030, 0.030, 0.030), dymp::vec3_t( 0.000,  0.000,  0.000), -1, -1, -1, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::zero3);
 	wb->links[ 1] = dymp::Wholebody::Link( 0.600, dymp::vec3_t(0.001, 0.001, 0.001), dymp::vec3_t( 0.000,  0.000,  0.000), -1,  0,  6, dymp::vec3_t( 0.000,  0.000,  0.145), dymp::ez);
 	wb->links[ 2] = dymp::Wholebody::Link(18.800, dymp::vec3_t(1.000, 1.000, 0.300), dymp::vec3_t(-0.050,  0.000,  0.200),  0,  1,  7, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ey);
 	wb->links[ 3] = dymp::Wholebody::Link( 0.100, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000,  0.000,  0.000), -1,  2, 14, dymp::vec3_t( 0.000,  0.000,  0.450), dymp::ez);
@@ -97,12 +98,10 @@ void Kinematics::Init(dymp::Wholebody* wb){
 	wb->links[30] = dymp::Wholebody::Link( 3.100, dymp::vec3_t(0.100, 0.100, 0.006), dymp::vec3_t( 0.000,  0.000, -0.140), -1, 29,  3, dymp::vec3_t( 0.000,  0.000, -0.360), dymp::ey);
 	wb->links[31] = dymp::Wholebody::Link( 0.060, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000,  0.000,  0.000), -1, 30,  4, dymp::vec3_t( 0.000,  0.000, -0.360), dymp::ex);
 	wb->links[32] = dymp::Wholebody::Link( 1.300, dymp::vec3_t(0.010, 0.010, 0.005), dymp::vec3_t( 0.000,  0.000,  0.000),  4, 31,  5, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ey);
-    /*
-	*/
+    */
 
     // kinematic and inertial parameters of RHP
-    /*
-   	wb->links[ 0] = dymp::Wholebody::Link( 4.224, dymp::vec3_t(0.030, 0.019, 0.029), dymp::vec3_t( 0.000,  0.000,  0.000), -1, -1, -1, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::zero3);
+    wb->links[ 0] = dymp::Wholebody::Link( 4.224, dymp::vec3_t(0.030, 0.019, 0.029), dymp::vec3_t( 0.000,  0.000,  0.000), -1, -1, -1, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::zero3);
 	wb->links[ 1] = dymp::Wholebody::Link( 0.642, dymp::vec3_t(0.000, 0.001, 0.000), dymp::vec3_t(-0.000, -0.000, -0.020), -1,  0,  6, dymp::vec3_t( 0.000,  0.000,  0.145), dymp::ez);
 	wb->links[ 2] = dymp::Wholebody::Link(18.826, dymp::vec3_t(1.176, 1.243, 0.248), dymp::vec3_t(-0.056,  0.001,  0.199),  0,  1,  7, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ey);
 	wb->links[ 3] = dymp::Wholebody::Link( 0.141, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000, -0.000, -0.016), -1,  2, 14, dymp::vec3_t( 0.000,  0.000,  0.450), dymp::ez);
@@ -139,7 +138,8 @@ void Kinematics::Init(dymp::Wholebody* wb){
 	wb->links[30] = dymp::Wholebody::Link( 3.127, dymp::vec3_t(0.105, 0.107, 0.006), dymp::vec3_t( 0.001,  0.000, -0.140), -1, 29,  3, dymp::vec3_t( 0.000,  0.000, -0.360), dymp::ey);
 	wb->links[31] = dymp::Wholebody::Link( 0.063, dymp::vec3_t(0.000, 0.000, 0.000), dymp::vec3_t( 0.000,  0.000,  0.000), -1, 30,  4, dymp::vec3_t( 0.000,  0.000, -0.360), dymp::ex);
 	wb->links[32] = dymp::Wholebody::Link( 1.297, dymp::vec3_t(0.008, 0.011, 0.005), dymp::vec3_t( 0.003,  0.000, -0.066),  4, 31,  5, dymp::vec3_t( 0.000,  0.000,  0.000), dymp::ey);
-    */
+    /*
+   	*/
     const real_t Ir = 0.1;
     for(auto& jnt : wb->joints)
         jnt.rotor_inertia = Ir;
@@ -166,17 +166,18 @@ void Kinematics::SetupStandStill(dymp::Wholebody* wb, dymp::WholebodyData& d){
     
     int njoint = (int)wb->joints.size();
     for(int i = 0; i < njoint; i++){
-        d.q[i] = 0.0;
-        d.qd[i] = 0.0;
-        d.qdd[i] = 0.0;
-        d.qddd[i] = 0.0;
+        dymp::WholebodyData::Joint& djnt = d.joints[i];
+        djnt.q    = 0.0;
+        djnt.qd   = 0.0;
+        djnt.qdd  = 0.0;
+        djnt.qddd = 0.0;
     }
 	// bend elbow
-    d.q[Joint::UpperArmRP] = 0.5; d.q[Joint::LowerArmRP] = -1.0;
-    d.q[Joint::UpperArmLP] = 0.5; d.q[Joint::LowerArmLP] = -1.0;
+    d.joints[Joint::UpperArmRP].q = 0.5; d.joints[Joint::LowerArmRP].q = -1.0;
+    d.joints[Joint::UpperArmLP].q = 0.5; d.joints[Joint::LowerArmLP].q = -1.0;
     // bend knee
-    d.q[Joint::UpperLegRP] = -0.5; d.q[Joint::LowerLegRP] = 1.0; d.q[Joint::FootRP] = -0.5;
-    d.q[Joint::UpperLegLP] = -0.5; d.q[Joint::LowerLegLP] = 1.0; d.q[Joint::FootLP] = -0.5;
+    d.joints[Joint::UpperLegRP].q = -0.5; d.joints[Joint::LowerLegRP].q = 1.0; d.joints[Joint::FootRP].q = -0.5;
+    d.joints[Joint::UpperLegLP].q = -0.5; d.joints[Joint::LowerLegLP].q = 1.0; d.joints[Joint::FootLP].q = -0.5;
 
     dymp::vec3_t pe = dymp::zero3;
     dymp::quat_t qe = dymp::unit_quat();

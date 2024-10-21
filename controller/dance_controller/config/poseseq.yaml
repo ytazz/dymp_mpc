@@ -3,5 +3,6 @@ min_contact_duration : 0.05
 max_duration         : 10.0
 initial_phase        : 0
 #initial_phase        : 30
-#pseq_file            : "C:\\usr\\Develop\\choreonoid\\vnoid_devel2023\\pseq\\mikumiku_1a.pseq"
-pseq_file            : "mikumiku/mikumiku_1b.pseq"
+pseq_file            : "mikumiku/mikumiku_intro.pseq"
+#pseq_file            : "mikumiku/mikumiku_1a.pseq"
+#pseq_file            : "mikumiku/mikumiku_1b.pseq"

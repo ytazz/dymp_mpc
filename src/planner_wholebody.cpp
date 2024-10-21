@@ -32,13 +32,13 @@ void PlannerThreadWholebody::Init(){
 	//graph->solver->Enable(ID(DiMP::ConTag::WholebodyForceT       ), false);
 	//graph->solver->Enable(ID(DiMP::ConTag::WholebodyForceR       ), false);
     //graph->solver->Enable(ID(DiMP::ConTag::WholebodyLimit        ), false);
-	world->solver->Enable(dymp::ID(dymp::ConTag::WholebodyContactPosT  ), false);
-	world->solver->Enable(dymp::ID(dymp::ConTag::WholebodyContactPosR  ), false);
-	world->solver->Enable(dymp::ID(dymp::ConTag::WholebodyContactVelT  ), false);
-	world->solver->Enable(dymp::ID(dymp::ConTag::WholebodyContactVelR  ), false);
-	world->solver->Enable(dymp::ID(dymp::ConTag::WholebodyNormalForce  ), false);
-	world->solver->Enable(dymp::ID(dymp::ConTag::WholebodyFrictionForce), false);
-	world->solver->Enable(dymp::ID(dymp::ConTag::WholebodyMoment       ), false);
+	//world->solver->Enable(dymp::ID(dymp::ConTag::WholebodyContactPosT  ), false);
+	//world->solver->Enable(dymp::ID(dymp::ConTag::WholebodyContactPosR  ), false);
+	//world->solver->Enable(dymp::ID(dymp::ConTag::WholebodyContactVelT  ), false);
+	//world->solver->Enable(dymp::ID(dymp::ConTag::WholebodyContactVelR  ), false);
+	//world->solver->Enable(dymp::ID(dymp::ConTag::WholebodyNormalForce  ), false);
+	//world->solver->Enable(dymp::ID(dymp::ConTag::WholebodyFrictionForce), false);
+	//world->solver->Enable(dymp::ID(dymp::ConTag::WholebodyMoment       ), false);
 	//graph->solver->Enable(ID(DiMP::ConTag::WholebodyMomentum       ), false);
 	//graph->solver->Enable(ID(DiMP::ConTag::WholebodyComPos       ), false);
 	//graph->solver->Enable(ID(DiMP::ConTag::WholebodyComVel       ), false);
@@ -208,6 +208,9 @@ void PlannerWholebody::Read(const YAML::Node& node){
     ReadVectorDouble(qdMax          , wbNode["qd_max"     ]);
     ReadVectorDouble(qddMin         , wbNode["qdd_min"    ]);
     ReadVectorDouble(qddMax         , wbNode["qdd_max"    ]);
+    ReadVectorDouble(qRangeWeight   , wbNode["q_range_weight"   ]);
+    ReadVectorDouble(qdRangeWeight  , wbNode["qd_range_weight"  ]);
+    ReadVectorDouble(qddRangeWeight , wbNode["qdd_range_weight" ]);
 }
 
 dymp::Wholebody* PlannerWholebody::GetWholebody(){
@@ -257,7 +260,7 @@ void PlannerWholebody::InitState(){
     GetDesiredState(0, 0.0, data_ref);
     qd_prev.resize(njoint);
     for(int i = 0; i < njoint; i++){
-        qd_prev[i] = data_cur.qd[i];
+        qd_prev[i] = data_cur.joints[i].qd;
     }
     time_prev = robot->timer.time;
 
@@ -288,8 +291,8 @@ void PlannerWholebody::Observe(){
 
     int njoint = (int)wb->joints.size();
     for(int i = 0; i < njoint; i++){
-        data_cur.q [i] = robot->joint[i].q;
-        data_cur.qd[i] = robot->joint[i].dq;
+        data_cur.joints[i].q  = robot->joint[i].q;
+        data_cur.joints[i].qd = robot->joint[i].dq;
     }
     for(int i = 0; i < 2; i++){
         dymp::WholebodyData::End& dend = data_cur.ends[3+i];
@@ -350,13 +353,12 @@ void PlannerWholebody::InterpolateReference(){
     }
 
     for(int i = 0; i < njoint; i++){
-        //data_ref.q  [i] = d0.q  [i] + d0.qd [i]*t + d0.qdd[i]*(0.5*t2);
-        //data_ref.qd [i] = d0.qd [i] + d0.qdd[i]*t;
-        //data_ref.qdd[i] = d0.qdd[i];
-        data_ref.q   [i] = d0.q   [i] + d0.qd  [i]*t + d0.qdd[i]*(0.5*t2) + d0.qddd[i]*((1.0/6.0)*t3);
-        data_ref.qd  [i] = d0.qd  [i] + d0.qdd [i]*t + d0.qddd[i]*(0.5*t2);
-        data_ref.qdd [i] = d0.qdd [i] + d0.qddd[i]*t;
-        data_ref.qddd[i] = d0.qddd[i];
+        dymp::WholebodyData::Joint& djnt_ref  = data_ref.joints[i];
+        dymp::WholebodyData::Joint& djnt_ref0 = d0      .joints[i];
+        djnt_ref.q    = djnt_ref0.q    + djnt_ref0.qd  *t + djnt_ref0.qdd *(0.5*t2) + djnt_ref0.qddd*((1.0/6.0)*t3);
+        djnt_ref.qd   = djnt_ref0.qd   + djnt_ref0.qdd *t + djnt_ref0.qddd*(0.5*t2);
+        djnt_ref.qdd  = djnt_ref0.qdd  + djnt_ref0.qddd*t;
+        djnt_ref.qddd = djnt_ref0.qddd;
     }
 
     for(int i = 0; i < nend; i++){
@@ -395,17 +397,17 @@ void PlannerWholebody::UpdateInput(){
     //subvec3_set(dx, idx, (data_cur.centroid.vel_r - data_ref.centroid.vel_r)/wb->scale.vr);
 
     for(int i = 0; i < njoint; i++){
-        dx(idx++) = (data_cur.q  [i] - data_ref.q  [i])/wb->scale.pr;
+        dx(idx++) = (data_cur.joints[i].q - data_ref.joints[i].q)/wb->scale.pr;
     }
     if( wb->param.inputMode == dymp::Wholebody::InputMode::Acceleration ||
         wb->param.inputMode == dymp::Wholebody::InputMode::Jerk ){
         for(int i = 0; i < njoint; i++){
-            dx(idx++) = (data_cur.qd [i] - data_ref.qd [i])/wb->scale.vr;
+            dx(idx++) = (data_cur.joints[i].qd - data_ref.joints[i].qd)/wb->scale.vr;
         }
     }
     if(wb->param.inputMode == dymp::Wholebody::InputMode::Jerk){
         for(int i = 0; i < njoint; i++){
-            dx(idx++) = (data_cur.qdd[i] - data_ref.qdd[i])/wb->scale.ar;
+            dx(idx++) = (data_cur.joints[i].qdd - data_ref.joints[i].qdd)/wb->scale.ar;
         }
     }
 
@@ -420,28 +422,28 @@ void PlannerWholebody::UpdateInput(){
 
     if(wb->param.inputMode == dymp::Wholebody::InputMode::Velocity){
         for(int i = 0; i < njoint; i++){
-            data_cur.qd[i] = data_ref.qd[i] + wb->scale.vr*du(idx++);
+            data_cur.joints[i].qd = data_ref.joints[i].qd + wb->scale.vr*du(idx++);
             
             // enforce joint velocity limit
-            data_cur.qd[i] = std::min(std::max(ddes0.qd_min[i], data_cur.qd[i]), ddes0.qd_max[i]);
+            data_cur.joints[i].qd = std::min(std::max(ddes0.joints[i].qd_min, data_cur.joints[i].qd), ddes0.joints[i].qd_max);
 
             // calc acceleration by difference
-            data_cur.qdd[i] = (data_cur.qd[i] - qd_prev[i])/(robot->timer.time - time_prev);
-            qd_prev[i] = data_cur.qd[i];
+            data_cur.joints[i].qdd = (data_cur.joints[i].qd - qd_prev[i])/(robot->timer.time - time_prev);
+            qd_prev[i] = data_cur.joints[i].qd;
         }
         time_prev = robot->timer.time;
     }
     if(wb->param.inputMode == dymp::Wholebody::InputMode::Acceleration){
         for(int i = 0; i < njoint; i++){
-            data_cur.qdd [i] = data_ref.qdd[i] + wb->scale.ar*du(idx++);
+            data_cur.joints[i].qdd = data_ref.joints[i].qdd + wb->scale.ar*du(idx++);
             
             // enforce joint acceleration limit
-            data_cur.qdd[i] = std::min(std::max(ddes0.qdd_min[i], data_cur.qdd[i]), ddes0.qdd_max[i]);
+            data_cur.joints[i].qdd = std::min(std::max(ddes0.joints[i].qdd_min, data_cur.joints[i].qdd), ddes0.joints[i].qdd_max);
         }
     }
     if(wb->param.inputMode == dymp::Wholebody::InputMode::Jerk){
         for(int i = 0; i < njoint; i++){
-            data_cur.qddd[i] = data_ref.qddd[i] + wb->scale.jr*du(idx++);
+            data_cur.joints[i].qddd = data_ref.joints[i].qddd + wb->scale.jr*du(idx++);
         }
     }
     
@@ -497,13 +499,6 @@ void PlannerWholebody::UpdateInput(){
     wb->CalcForce             (data_cur);    
 
     //DSTR << data_cur.links[0].force_t_par << " " << data_cur.links[0].force_r_par << endl;
-
-    // set joint commands
-    for(int i = 0; i < njoint; i++){
-        robot->joint[i].q_ref  = data_ref.q  [i];
-        robot->joint[i].dq_ref = data_ref.qd [i];
-        robot->joint[i].u_ref  = data_cur.tau[i];
-    }
 }
 
 void PlannerWholebody::UpdateGain(){
@@ -540,13 +535,13 @@ void PlannerWholebody::GetInitialState(dymp::WholebodyData& d){
     d.centroid.vel_r = data_cur.centroid.vel_r;
     d.centroid.L_abs = data_cur.centroid.L_abs;
     
-    int nend   = (int)d.ends.size();
-    int njoint = (int)d.q   .size();
+    int nend   = (int)d.ends  .size();
+    int njoint = (int)d.joints.size();
 
     for(int i = 0; i < njoint; i++){
-        d.q  [i] = data_cur.q  [i];
-        d.qd [i] = data_cur.qd [i];
-        d.qdd[i] = data_cur.qdd[i];
+        d.joints[i].q   = data_cur.joints[i].q  ;
+        d.joints[i].qd  = data_cur.joints[i].qd ;
+        d.joints[i].qdd = data_cur.joints[i].qdd;
     }
 }
 
@@ -605,21 +600,26 @@ void PlannerWholebody::GetDesiredState(int k, dymp::real_t t, dymp::WholebodyDat
         d.centroid.Ld_weight    = 10000.0*dymp::one3;
         //d.centroid.acc_r_weight = 10000.0*one;
 
-        int nend   = (int)d.ends.size();
-        int njoint = (int)d.q.size();
+        int nend   = (int)d.ends  .size();
+        int njoint = (int)d.joints.size();
 
         for(int i = 0; i < njoint; i++){
-		    d.q_weight   [i] = qWeight  [i];
-		    d.qd_weight  [i] = qdWeight [i];
-		    d.qdd_weight [i] = qddWeight[i];
-            d.qddd_weight[i] = qdddWeight[i];
+            dymp::WholebodyData::Joint& djnt = d.joints[i];
+		    djnt.q_weight    = qWeight  [i];
+		    djnt.qd_weight   = qdWeight [i];
+		    djnt.qdd_weight  = qddWeight[i];
+            djnt.qddd_weight = qdddWeight[i];
 
-		    d.q_min[i] = qMin[i];
-		    d.q_max[i] = qMax[i];
-		    d.qd_min[i] = qdMin[i];
-		    d.qd_max[i] = qdMax[i];
-		    d.qdd_min[i] = qddMin[i];
-		    d.qdd_max[i] = qddMax[i];
+		    djnt.q_min   = qMin  [i];
+		    djnt.q_max   = qMax  [i];
+		    djnt.qd_min  = qdMin [i];
+		    djnt.qd_max  = qdMax [i];
+		    djnt.qdd_min = qddMin[i];
+		    djnt.qdd_max = qddMax[i];
+
+            djnt.q_range_weight =   qRangeWeight  [i];
+            djnt.qd_range_weight  = qdRangeWeight [i];
+            djnt.qdd_range_weight = qddRangeWeight[i];
 	    }
 
         for(int i = 0; i < nend; i++){
@@ -659,16 +659,28 @@ void PlannerWholebody::ToRobot(){
         // update input
         InterpolateReference();
         UpdateInput();
-        
+
         // set joint commands
-        int njoint = (int)data_cur.tau.size();
+        int njoint = (int)data_cur.joints.size();
         for(int i = 0; i < njoint; i++){
-            robot->joint[i].q_ref  = data_ref.q  [i];
-            robot->joint[i].dq_ref = data_ref.qd [i];
-            robot->joint[i].u_ref  = data_cur.tau[i];
+            robot->joint[i].q_ref  = data_ref.joints[i].q  ;
+            robot->joint[i].dq_ref = data_ref.joints[i].qd ;
+            robot->joint[i].u_ref  = data_cur.joints[i].tau;
         }
-        /*
-        */
+        
+        // prevent joint buckling
+        const int knee_joints[] = {
+            Kinematics::Joint::LowerLegLP, 
+            Kinematics::Joint::LowerLegRP
+        };
+        for(int i : knee_joints){
+            if(robot->joint[i].q <= qMin[i]){
+                robot->joint[i].q_ref  = std::max(robot->joint[i].q_ref, qMin[i]);
+                robot->joint[i].dq_ref = std::max(robot->joint[i].dq_ref, 0.0);
+                robot->joint[i].u_ref  = std::max(robot->joint[i].u_ref, 0.0);
+                printf("buckle warning!\n");
+            }
+        }
     }
 
 	//Planner::ToRobot();
@@ -765,19 +777,19 @@ void PlannerWholebody::SavePlan(){
             d.centroid.Ld_local.x(), d.centroid.Ld_local.y(), d.centroid.Ld_local.z()
         );
         for(int i = 0; i < wb->joints.size(); i++){
-            fprintf(file, "%f, ", d.q[i]);
+            fprintf(file, "%f, ", d.joints[i].q);
         }
         for(int i = 0; i < wb->joints.size(); i++){
-            fprintf(file, "%f, ", d.qd[i]);
+            fprintf(file, "%f, ", d.joints[i].qd);
         }
         for(int i = 0; i < wb->joints.size(); i++){
-            fprintf(file, "%f, ", d.qdd[i]);
+            fprintf(file, "%f, ", d.joints[i].qdd);
         }
         for(int i = 0; i < wb->joints.size(); i++){
-            fprintf(file, "%f, ", d.qddd[i]);
+            fprintf(file, "%f, ", d.joints[i].qddd);
         }
         for(int i = 0; i < wb->joints.size(); i++){
-            fprintf(file, "%f, ", d.tau[i]);
+            fprintf(file, "%f, ", d.joints[i].tau);
         }
         for(int i = 0; i < wb->ends.size(); i++){
             dymp::WholebodyData::End& dend = d.ends[i];
