@@ -121,7 +121,8 @@ void Kinematics::LoadLinksFromBody(dymp::Wholebody* wb){
             if(wb->joints.size() <= lnk.ijoint){
                 wb->joints.resize(lnk.ijoint + 1);
             }
-            ReadDouble(wb->joints[lnk.ijoint].rotor_inertia, linkNode["joint_axis_inertia"]);
+            ReadDouble (wb->joints[lnk.ijoint].rotor_inertia, linkNode["joint_axis_inertia"]);
+            ReadVector2(wb->joints[lnk.ijoint].pos_range    , linkNode["joint_range"]);
         }
         if(jointType == "fixed"){
             // skip fix joints
@@ -347,8 +348,8 @@ void Kinematics::Convert(const dymp::WholebodyData& d_wb, dymp::CentroidData& d,
 
     d.I     [idiv] = d_wb.centroid.I_abs;
     d.Iinv  [idiv] = d_wb.centroid.I_abs_inv;
-    //d.Llocal[idiv] = d_wb.centroid.pos_r*d_wb.centroid.L;
-    d.Llocal[idiv] = dymp::zero3;
+    d.Llocal[idiv] = d_wb.centroid.pos_r*d_wb.centroid.L_local;
+    //d.Llocal[idiv] = dymp::zero3;
 }
 
 bool Kinematics::CalcIK(const dymp::vec3_t& pos, const dymp::quat_t& ori, double sign, vector<double>& q){
@@ -363,7 +364,7 @@ bool Kinematics::CalcIK(const dymp::vec3_t& pos, const dymp::quat_t& ori, double
     dymp::mat3_t R_ha = ori.toRotationMatrix();
     auto R_ah = R_ha.transpose();
     dymp::vec3_t p = pos;
-    p.y() -= sign * L1;
+    p.y() -= sign*L1;
     p.z() -= L0;
     dymp::vec3_t p_ah = -R_ah * p;
     

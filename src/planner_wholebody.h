@@ -72,8 +72,8 @@ public:
 	vector<double>  qdWeight;
 	vector<double>  qddWeight;
 	vector<double>  qdddWeight;
-	vector<double>  qMin, qdMin, qddMin;
-	vector<double>  qMax, qdMax, qddMax;
+	//vector<double>  qMin, qdMin, qddMin;
+	//vector<double>  qMax, qdMax, qddMax;
     vector<double>  qRangeWeight, qdRangeWeight, qddRangeWeight;
 
 	dymp::WholebodyData  data_cur, data_ref, data_des;

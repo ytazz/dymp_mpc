@@ -607,8 +607,8 @@ void Poseseq::Setup(double t, dymp::Wholebody* wb, dymp::WholebodyData& d){
             }
             else if(heel){
                 dend.state   = dymp::Wholebody::ContactState::Line;
-                dend.cop_min = dymp::vec3_t(-0.10, -0.05, -0.1);
-                dend.cop_max = dymp::vec3_t(-0.10,  0.05,  0.1);
+                dend.cop_min = dymp::vec3_t(-0.1, -0.05, -0.1);
+                dend.cop_max = dymp::vec3_t(-0.1,  0.05,  0.1);
                 dend.pos_te  = dymp::vec3_t( 0.1 ,  0.0 ,  0.0);
             }
             else{
@@ -628,7 +628,7 @@ void Poseseq::Setup(double t, dymp::Wholebody* wb, dymp::WholebodyData& d){
         dend.vel_r_abs = we;
 
         vector<double> qleg;
-        robot->kinematics->CalcIK(qbase.conjugate()*(pe - pbase), qbase.conjugate()*dend.pos_r_abs, (i == 0 ? -1.0 : +1.0), qleg);
+        robot->kinematics->CalcIK(qbase.conjugate()*(pe - pbase), qbase.conjugate()*qe, (i == 0 ? -1.0 : +1.0), qleg);
         for(int j = 0; j < 6; j++){
             d.joints[robot->kinematics->legJointIndices[i][j]].q = qleg[j];
         }

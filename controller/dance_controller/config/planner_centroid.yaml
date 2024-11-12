@@ -24,7 +24,7 @@ centroid:
   body_range_max    : [ 0.1,  0.1,  0.25]
   duration_min      : 0.0
   duration_max      : 10.0
-  swing_height      : 0.05
+  swing_height      : 0.02
   swing_slope       : 0.10
   swing_lift_margin : 0.0
   swing_land_margin : 0.0
@@ -34,16 +34,17 @@ centroid:
   end_wrench_parametrization : "stiffness"
   #end_wrench_parametrization : "direct"
   #end_interpolation          : "cycloid_local"
-  end_interpolation          : "cycloid_global"
-  #end_interpolation          : "polynomial"
+  #end_interpolation          : "cycloid_global"
+  end_interpolation          : "polynomial"
   compl_weight               : 1000
+  enable_feedback     : false
   end:
    -
     base_pos      : [ 0.0, -0.05,   0.0]
     pos_min       : [-0.3, -0.15, -0.85]
     pos_max       : [ 0.3,  0.05, -0.65]
-    cop_min       : [-0.1, -0.1, -0.1]
-    cop_max       : [ 0.1,  0.1,  0.1]
+    cop_min       : [-0.10, -0.05, -0.1]
+    cop_max       : [ 0.15,  0.05,  0.1]
     stiffness_max : 50.0
     cmp_offset    : [0, 0]
     lock_cmp      : false
@@ -52,8 +53,8 @@ centroid:
     base_pos      : [ 0.0,  0.05,  0.0]
     pos_min       : [-0.3, -0.05, -0.85]
     pos_max       : [ 0.3,  0.15, -0.65]
-    cop_min       : [-0.1, -0.1, -0.1]
-    cop_max       : [ 0.1,  0.1,  0.1]
+    cop_min       : [-0.10, -0.05, -0.1]
+    cop_max       : [ 0.15,  0.05,  0.1]
     stiffness_max : 50.0
     cmp_offset    : [0, -0]
     lock_cmp      : false
@@ -83,5 +84,5 @@ centroid:
   end_vel_weight        : [1,1,1]
   end_angvel_weight     : [1,1,1]
   end_stiffness_weight  : 1
-  end_cmp_weight        : [100,100]
-  end_moment_weight     : [100,100,100]
+  end_cmp_weight        : [10,10]
+  end_moment_weight     : [10,10,10]

@@ -5,8 +5,8 @@ thigh_length              :  0.36
 shank_length              :  0.36
 ankle_to_foot0            : [0.0,  0.0, -0.104]
 ankle_to_foot1            : [0.0,  0.0, -0.104]
-#model_filename            : "RHPS1/RHPS1.body"
-model_filename            : "dymp_mpc_sample_robot1/sample_robot1.body"
+model_filename            : "RHPS1/RHPS1.body"
+#model_filename            : "dymp_mpc_sample_robot1/sample_robot1.body"
 leg_joint_indices0        : [8, 9, 10, 11, 12, 13]
 leg_joint_indices1        : [0, 1, 2, 3, 4, 5]
 foot_link_index0          : 26

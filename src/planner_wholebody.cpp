@@ -57,6 +57,7 @@ void PlannerThreadWholebody::Setup(){
     wb->Shift(/*planner->mpcUpdateCycle*planner->robot->timer.dt*/planner->mpcTimestep);
 	wb->Setup();
     wb->Reset(false);
+    //wb->Reset(true);
     world->solver->InitDDP();
 
     if(planner_wb->useCentroid && planner_wb->robot->planner_centroid->mpcInputReady){
@@ -202,12 +203,12 @@ void PlannerWholebody::Read(const YAML::Node& node){
     ReadVectorDouble(qdWeight       , wbNode["qd_weight"  ]);
     ReadVectorDouble(qddWeight      , wbNode["qdd_weight" ]);
     ReadVectorDouble(qdddWeight     , wbNode["qddd_weight" ]);
-    ReadVectorDouble(qMin           , wbNode["q_min"      ]);
-    ReadVectorDouble(qMax           , wbNode["q_max"      ]);
-    ReadVectorDouble(qdMin          , wbNode["qd_min"     ]);
-    ReadVectorDouble(qdMax          , wbNode["qd_max"     ]);
-    ReadVectorDouble(qddMin         , wbNode["qdd_min"    ]);
-    ReadVectorDouble(qddMax         , wbNode["qdd_max"    ]);
+    //ReadVectorDouble(qMin           , wbNode["q_min"      ]);
+    //ReadVectorDouble(qMax           , wbNode["q_max"      ]);
+    //ReadVectorDouble(qdMin          , wbNode["qd_min"     ]);
+    //ReadVectorDouble(qdMax          , wbNode["qd_max"     ]);
+    //ReadVectorDouble(qddMin         , wbNode["qdd_min"    ]);
+    //ReadVectorDouble(qddMax         , wbNode["qdd_max"    ]);
     ReadVectorDouble(qRangeWeight   , wbNode["q_range_weight"   ]);
     ReadVectorDouble(qdRangeWeight  , wbNode["qd_range_weight"  ]);
     ReadVectorDouble(qddRangeWeight , wbNode["qdd_range_weight" ]);
@@ -425,7 +426,8 @@ void PlannerWholebody::UpdateInput(){
             data_cur.joints[i].qd = data_ref.joints[i].qd + wb->scale.vr*du(idx++);
             
             // enforce joint velocity limit
-            data_cur.joints[i].qd = std::min(std::max(ddes0.joints[i].qd_min, data_cur.joints[i].qd), ddes0.joints[i].qd_max);
+            //data_cur.joints[i].qd = std::min(std::max(ddes0.joints[i].qd_min, data_cur.joints[i].qd), ddes0.joints[i].qd_max);
+            data_cur.joints[i].qd = std::min(std::max(wb->joints[i].vel_range[0], data_cur.joints[i].qd), wb->joints[i].vel_range[1]);
 
             // calc acceleration by difference
             data_cur.joints[i].qdd = (data_cur.joints[i].qd - qd_prev[i])/(robot->timer.time - time_prev);
@@ -438,7 +440,8 @@ void PlannerWholebody::UpdateInput(){
             data_cur.joints[i].qdd = data_ref.joints[i].qdd + wb->scale.ar*du(idx++);
             
             // enforce joint acceleration limit
-            data_cur.joints[i].qdd = std::min(std::max(ddes0.joints[i].qdd_min, data_cur.joints[i].qdd), ddes0.joints[i].qdd_max);
+            //data_cur.joints[i].qdd = std::min(std::max(ddes0.joints[i].qdd_min, data_cur.joints[i].qdd), ddes0.joints[i].qdd_max);
+            data_cur.joints[i].qdd = std::min(std::max(wb->joints[i].acc_range[0], data_cur.joints[i].qdd), wb->joints[i].acc_range[1]);
         }
     }
     if(wb->param.inputMode == dymp::Wholebody::InputMode::Jerk){
@@ -466,7 +469,7 @@ void PlannerWholebody::UpdateInput(){
         }
         else{
             dymp::real_t fz = dend.force_t.z();
-
+            
             // limit by measured force
             //if(i == 3 || i == 4){
             fz = std::max(0.0, std::min(fz, robot->foot[i].force.z()));
@@ -482,11 +485,11 @@ void PlannerWholebody::UpdateInput(){
             mlocal.z() = std::min(std::max( dend_des.cop_min.z()*fz, mlocal.z()),  dend_des.cop_max.z()*fz);
             dend.force_t = dend.pos_r*flocal;
             dend.force_r = dend.pos_r*mlocal;
+            /*
+            */
         }
     }
-    /*
-    */
-
+    
     wb->CalcPosition          (data_cur);
     wb->CalcVelocity          (data_cur);
     wb->CalcAcceleration      (data_cur);
@@ -610,12 +613,12 @@ void PlannerWholebody::GetDesiredState(int k, dymp::real_t t, dymp::WholebodyDat
 		    djnt.qdd_weight  = qddWeight[i];
             djnt.qddd_weight = qdddWeight[i];
 
-		    djnt.q_min   = qMin  [i];
-		    djnt.q_max   = qMax  [i];
-		    djnt.qd_min  = qdMin [i];
-		    djnt.qd_max  = qdMax [i];
-		    djnt.qdd_min = qddMin[i];
-		    djnt.qdd_max = qddMax[i];
+		    //djnt.q_min   = qMin  [i];
+		    //djnt.q_max   = qMax  [i];
+		    //djnt.qd_min  = qdMin [i];
+		    //djnt.qd_max  = qdMax [i];
+		    //djnt.qdd_min = qddMin[i];
+		    //djnt.qdd_max = qddMax[i];
 
             djnt.q_range_weight =   qRangeWeight  [i];
             djnt.qd_range_weight  = qdRangeWeight [i];
@@ -643,8 +646,8 @@ void PlannerWholebody::GetDesiredState(int k, dymp::real_t t, dymp::WholebodyDat
             if(i == Kinematics::End::FootR || i == Kinematics::End::FootL){
                 dend.pos_t_weight = wf*(dend.state == dymp::Wholebody::ContactState::Free ? 1.0 : 1.0)*footPosWeight   ;
                 dend.pos_r_weight = wf*(dend.state == dymp::Wholebody::ContactState::Free ? 1.0 : 1.0)*footOriWeight   ;
-                dend.vel_t_weight = wf*(dend.state == dymp::Wholebody::ContactState::Free ? 0.0 : 1.0)*footVelWeight   ;
-                dend.vel_r_weight = wf*(dend.state == dymp::Wholebody::ContactState::Free ? 0.0 : 1.0)*footAngvelWeight;
+                dend.vel_t_weight = wf*(dend.state == dymp::Wholebody::ContactState::Free ? 1.0 : 1.0)*footVelWeight   ;
+                dend.vel_r_weight = wf*(dend.state == dymp::Wholebody::ContactState::Free ? 1.0 : 1.0)*footAngvelWeight;
             }
             dend.force_t_weight     = (dend.state == dymp::Wholebody::ContactState::Free ? 10000.0*dymp::one3 : endForceWeight );
             dend.force_r_weight     = (dend.state == dymp::Wholebody::ContactState::Free ? 10000.0*dymp::one3 : endMomentWeight);
@@ -727,19 +730,23 @@ void PlannerWholebody::SavePlan(){
     for(int i = 0; i < wb->ends.size(); i++){
         fprintf(file,
             "end%d_pos_t_x, end%d_pos_t_y, end%d_pos_t_z, "
-            "end%d_pos_r_x, end%d_pos_r_y, end%d_pos_r_z, "
+            "end%d_pos_r_x, end%d_pos_r_y, end%d_pos_r_z, end%d_pos_r_w, "
             "end%d_vel_t_x, end%d_vel_t_y, end%d_vel_t_z, "
             "end%d_vel_r_x, end%d_vel_r_y, end%d_vel_r_z, "
             "end%d_acc_t_x, end%d_acc_t_y, end%d_acc_t_z, "
             "end%d_acc_r_x, end%d_acc_r_y, end%d_acc_r_z, "
+            "end%d_pos_t_des_x, end%d_pos_t_des_y, end%d_pos_t_des_z, "
+            "end%d_pos_r_des_x, end%d_pos_r_des_y, end%d_pos_r_des_z, end%d_pos_r_des_w, "
             "end%d_force_t_x, end%d_force_t_y, end%d_force_t_z, "
             "end%d_force_r_x, end%d_force_r_y, end%d_force_r_z, ",
             i, i, i,
+            i, i, i, i,
             i, i, i,
             i, i, i,
             i, i, i,
             i, i, i,
             i, i, i,
+            i, i, i, i,
             i, i, i,
             i, i, i
             );
@@ -749,6 +756,7 @@ void PlannerWholebody::SavePlan(){
     for(int k = 0; k < world->ticks.size(); k++){
         auto key = (dymp::WholebodyKey*)wb->traj.GetKeypoint(k);
         auto& d = key->data;
+        auto& d_des = key->data_des;
 
         dymp::vec3_t pc = d.centroid.pos_t;
         dymp::vec3_t vc = d.centroid.vel_t;
@@ -794,6 +802,8 @@ void PlannerWholebody::SavePlan(){
         }
         for(int i = 0; i < wb->ends.size(); i++){
             dymp::WholebodyData::End& dend = d.ends[i];
+            dymp::WholebodyData::End& dend_des = d_des.ends[i];
+            
             dymp::vec3_t pe_abs = pc + q0*dend.pos_t;
             dymp::quat_t qe_abs = q0*dend.pos_r;
             dymp::vec3_t ve_abs = vc + q0*dend.vel_t + w0.cross(q0*dend.pos_t);
@@ -803,19 +813,23 @@ void PlannerWholebody::SavePlan(){
 
             fprintf(file,
                 "%f, %f, %f, "
+                "%f, %f, %f, %f, "
                 "%f, %f, %f, "
                 "%f, %f, %f, "
                 "%f, %f, %f, "
                 "%f, %f, %f, "
                 "%f, %f, %f, "
+                "%f, %f, %f, %f, "
                 "%f, %f, %f, "
                 "%f, %f, %f, ",
                 pe_abs.x(), pe_abs.y(), pe_abs.z(), 
-                qe_abs.x(), qe_abs.y(), qe_abs.z(), 
+                qe_abs.x(), qe_abs.y(), qe_abs.z(), qe_abs.w(),
                 ve_abs.x(), ve_abs.y(), ve_abs.z(), 
                 we_abs.x(), we_abs.y(), we_abs.z(), 
                 ae_abs.x(), ae_abs.y(), ae_abs.z(), 
                 ue_abs.x(), ue_abs.y(), ue_abs.z(), 
+                dend_des.pos_t_abs.x(), dend_des.pos_t_abs.y(), dend_des.pos_t_abs.z(), 
+                dend_des.pos_r_abs.x(), dend_des.pos_r_abs.y(), dend_des.pos_r_abs.z(), dend_des.pos_r_abs.w(),
                 //dend.pos_t.x, dend.pos_t.y, dend.pos_t.z, 
                 //dend.pos_r.x, dend.pos_r.y, dend.pos_r.z, 
                 //dend.vel_t.x, dend.vel_t.y, dend.vel_t.z, 

@@ -41,10 +41,11 @@ public:
 	dymp::real_t   endStiffnessWeight;
 	dymp::vec2_t   endCmpWeight;
 	dymp::vec3_t   endMomentWeight;
+    bool           enableFeedback;
 	
 	dymp::real_t  cur_time;
 	int     cur_phase;
-	dymp::CentroidData  data_ref, dtmp[2];
+	dymp::CentroidData  data_cur, data_ref, dtmp[2];
 	vector<dymp::CentroidData>  data_traj, data_traj_des;
 	vector<dymp::real_t> V;
 	vector<dymp::Vector> Vx;

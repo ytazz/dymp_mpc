@@ -20,7 +20,7 @@ PlannerThreadCentroid::PlannerThreadCentroid(Planner* _planner):PlannerThread(_p
     centroid->param.I(1,1) = 10.0;//planner->robot->nominal_inertia.y();
     centroid->param.I(2,2) =  5.0;//planner->robot->nominal_inertia.z();
     centroid->param.g  = 9.8;
-    centroid->param.mu = 0.5;
+    centroid->param.mu = 1.0;
     
     centroid->param.contactMargin = 0.0;
     
@@ -44,8 +44,8 @@ void PlannerThreadCentroid::Init(){
 	//graph->solver->Enable(ID(DiMP::ConTag::CentroidEndStiff  ), false);
 	world->solver->Enable(dymp::ID(dymp::ConTag::CentroidEndPosRange   ), false);
 	//world->solver->Enable(dymp::ID(dymp::ConTag::CentroidEndContact    ), false);
-    world->solver->Enable(dymp::ID(dymp::ConTag::CentroidEndFriction   ), false);
-	world->solver->Enable(dymp::ID(dymp::ConTag::CentroidEndMomentRange), false);
+    //world->solver->Enable(dymp::ID(dymp::ConTag::CentroidEndFriction   ), false);
+	//world->solver->Enable(dymp::ID(dymp::ConTag::CentroidEndMomentRange), false);
 
     //graph->solver->SetCorrection(ID(DiMP::ConTag::CentroidPosT    ), 0.0);
     //graph->solver->SetCorrection(ID(DiMP::ConTag::CentroidPosR    ), 0.0);
@@ -96,6 +96,7 @@ PlannerCentroid::PlannerCentroid(){
     endCmpWeight       = Vector2(1.0, 1.0);
     endMomentWeight    = Vector3(1.0, 1.0, 1.0);
     savePlan           = false;
+    enableFeedback     = false;
 }
 
 void PlannerCentroid::Read(const YAML::Node& node){
@@ -173,6 +174,8 @@ void PlannerCentroid::Read(const YAML::Node& node){
 	ReadDouble (endStiffnessWeight, cenNode["end_stiffness_weight"]);
 	ReadVector2(endCmpWeight      , cenNode["end_cmp_weight"     ]);
 	ReadVector3(endMomentWeight   , cenNode["end_moment_weight"  ]);
+
+    ReadBool(enableFeedback, cenNode["enable_feedback"]);
 }
 
 PlannerThread* PlannerCentroid::CreateThread(){
@@ -202,6 +205,7 @@ void PlannerCentroid::InitState(){
     mat_clear(Quuinv_Qux);
 
     int N = mpcPredictionSteps;
+    data_cur.Init(centroid);
     data_ref.Init(centroid);
     data_traj    .resize(N+1);
     data_traj_des.resize(N+1);
@@ -383,24 +387,39 @@ void PlannerCentroid::UpdateGain(){
 
 void PlannerCentroid::GetInitialState(dymp::CentroidData& d){
     //d = data_ref;
-    d.pos_t = data_ref.pos_t;
-    d.vel_t = data_ref.vel_t;
-    d.pos_r = data_ref.pos_r;
-    d.L     = data_ref.L;
-    d.time  = data_ref.time;
+    if(enableFeedback){
+        d.pos_t = data_cur.pos_t;
+        d.vel_t = data_cur.vel_t;
+        d.pos_r = data_cur.pos_r;
+        d.L     = data_cur.L;
+    }
+    else{
+        d.pos_t = data_ref.pos_t;
+        d.vel_t = data_ref.vel_t;
+        d.pos_r = data_ref.pos_r;
+        d.L     = data_ref.L;
+    }
     
+    d.time  = data_ref.time;
+
     int nend = (int)d.ends.size();
     
     for(int i = 0; i < nend; i++){
         dymp::CentroidData::End&  dend     = d.ends[i];
-        dymp::CentroidData::End&  dend_cur = data_ref.ends[i];
+        dymp::CentroidData::End&  dend_cur = data_cur.ends[i];
+        dymp::CentroidData::End&  dend_ref = data_ref.ends[i];
         
-        dend.pos_t = dend_cur.pos_t;
-        dend.pos_r = dend_cur.pos_r;
-        dend.vel_t = dend_cur.vel_t;
-        dend.vel_r = dend_cur.vel_r;
-
-        dend.iface = dend_cur.iface;
+        if(enableFeedback){
+            dend.pos_t = dend_cur.pos_t;
+            dend.pos_r = dend_cur.pos_r;
+        }
+        else{
+            dend.pos_t = dend_ref.pos_t;
+            dend.pos_r = dend_ref.pos_r;
+        }
+        
+        dend.iface = dend_ref.iface;
+        dend.state = dend_ref.state;
     }
     /*
     d.pos_t    = data_cur.pos_t;
@@ -445,7 +464,7 @@ void PlannerCentroid::GetDesiredState(int k, dymp::real_t t, dymp::CentroidData&
             robot->kinematics->Convert(data_wb, d, idiv);
 
             // set desired angular momentum as zero
-            d.L = dymp::zero3;
+            //d.L = dymp::zero3;
         }
         d.time     = t0;
         d.duration = tau;
@@ -491,19 +510,22 @@ bool PlannerCentroid::IsMpcUpdateCycle(){
 }
 
 void PlannerCentroid::Observe(){
-    /*
-    DiMP::Centroid* centroid = GetCentroid();
+    dymp::Centroid* centroid = GetCentroid();
     
     data_cur.pos_t = robot->planner_wb->data_cur.centroid.pos_t;
     data_cur.vel_t = robot->planner_wb->data_cur.centroid.vel_t;
     data_cur.pos_r = robot->planner_wb->data_cur.centroid.pos_r;
     data_cur.vel_r = robot->planner_wb->data_cur.centroid.vel_r;        
+    data_cur.L     = robot->planner_wb->data_cur.centroid.L_abs;
 
     int nend = (int)centroid->ends.size();
     for(int i = 0; i < nend; i++){
-        data_cur.ends[i].pos_t = data_cur.pos_t + data_cur.pos_r*robot->planner_wb->data_cur.ends[3+i].pos_t;
-        data_cur.ends[i].pos_r = data_cur.pos_r*robot->planner_wb->data_cur.ends[3+i].pos_r;
+        data_cur.ends[i].pos_t = data_cur.pos_t + data_cur.pos_r*robot->planner_wb->data_cur.ends[i].pos_t;
+        data_cur.ends[i].pos_r = data_cur.pos_r*robot->planner_wb->data_cur.ends[i].pos_r;
+        data_cur.ends[i].vel_t = data_cur.vel_t + data_cur.vel_r.cross(data_cur.pos_r*robot->planner_wb->data_cur.ends[i].pos_t) + data_cur.pos_r*robot->planner_wb->data_cur.ends[i].vel_t;
+        data_cur.ends[i].vel_r = data_cur.vel_r + data_cur.pos_r*robot->planner_wb->data_cur.ends[i].vel_r;
     }
+    /*
     */
 }
 
