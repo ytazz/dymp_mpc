@@ -701,7 +701,9 @@ void PlannerCentroid::Visualize(cnoid::vnoid::Visualizer* viz, VizInfo& info){
                 continue;
 
             cnoid::vnoid::Visualizer::Box*  boxEnd = viz->data->GetBox(info.iframe, info.ibox++);        
-            boxEnd->color = Eigen::Vector3f(1.0f, 0.0f, 1.0f);
+            if(data_traj_des[k].ends[i].iface == -1)
+                 boxEnd->color = Eigen::Vector3f(0.5f, 0.0f, 0.5f);
+            else boxEnd->color = Eigen::Vector3f(1.0f, 0.0f, 1.0f);
             boxEnd->alpha = 0.5f;
             //boxEnd->pos   = FromSpr(key->ends[i].var_pos_t->val);
             //boxEnd->ori   = FromSpr(key->ends[i].var_pos_r->val);
@@ -721,7 +723,7 @@ void PlannerCentroid::Visualize(cnoid::vnoid::Visualizer* viz, VizInfo& info){
         dymp::real_t t0 = data_traj[k+0].time;
         dymp::real_t t1 = data_traj[k+1].time;
 
-        const int ndiv = 30;
+        const int ndiv = 10;
         for(int j = 0; j < ndiv; j++){
             dymp::real_t a  = (dymp::real_t)j/(dymp::real_t)ndiv;
             dymp::real_t t  = (1-a)*t0 + a*t1;

@@ -87,11 +87,11 @@ void MyRobot::Init(cnoid::SimpleControllerIO* io){
     planner_wb      ->RunThreads();
     
     viz = new cnoid::vnoid::Visualizer();
-    viz->header.numMaxFrames       = 1000;
+    viz->header.numMaxFrames       = 1500;
     viz->header.numMaxLines        = 10;
-    viz->header.numMaxSpheres      = 1000;
-    viz->header.numMaxBoxes        = 1000;
-    viz->header.numMaxCylinders    = 8000;
+    viz->header.numMaxSpheres      = 100;
+    viz->header.numMaxBoxes        = 100;
+    viz->header.numMaxCylinders    = 100;
     viz->header.numMaxLineVertices = 4000;
     viz->Open();
 

@@ -4,7 +4,7 @@ cutoff_step_size    : 1.0
 min_step_size       : 1.0
 max_step_size       : 1.0
 correction_rate     : 1.0
-mpc_prediction_steps: 5
+mpc_prediction_steps: 10
 mpc_timestep        : 0.020
 mpc_timestep_scale  : 1.0
 mpc_num_threads     : 5
@@ -42,7 +42,7 @@ wholebody:
   hand_ori_weight       : [0, 0, 0]
   hand_vel_weight       : [0, 0, 0]
   hand_angvel_weight    : [0, 0, 0]
-  end_force_weight      : [200,200,200]
+  end_force_weight      : [200,200,20]
   end_moment_weight     : [200,200,200]
   #q_weight              : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  0, 0,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  10,  10,   0, 0, 0,    0, 0, 0, 0,  0, 0, 0,    0, 0, 0, 0]
   #qd_weight             : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  0, 0,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  10,  10,   0, 0, 0,    0, 0, 0, 0,  0, 0, 0,    0, 0, 0, 0]
