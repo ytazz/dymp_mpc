@@ -8,6 +8,10 @@
 # define USE_WFMO 0
 #endif
 
+#include <iostream>
+#include <algorithm>
+using namespace std;
+
 namespace dymp{
 namespace mpc{
 

@@ -170,7 +170,7 @@ void MyRobot::Control(){
         planner_wb->ToRobot();
         planner_centroid->ToRobot();
 
-        Visualize(timer);
+        //Visualize(timer);
 
         Robot::Actuate(timer, base, joint);
 
