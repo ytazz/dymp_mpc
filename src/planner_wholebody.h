@@ -102,7 +102,7 @@ public:
 	virtual void UpdateInput();
 	virtual void UpdateGain ();
 	virtual void ToRobot  ();
-	virtual void Visualize(cnoid::vnoid::Visualizer* viz, VizInfo& info);
+	virtual void Visualize(cnoid::vnoid::Visualizer* viz, cnoid::vnoid::VizInfo& info);
 
 	PlannerWholebody();
 };

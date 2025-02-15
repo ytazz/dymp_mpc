@@ -74,7 +74,7 @@ public:
 	virtual void Read     (const YAML::Node& node);
 	virtual void InitState();
 	virtual void Observe  ();
-	virtual void Visualize(cnoid::vnoid::Visualizer* viz, VizInfo& info);
+	virtual void Visualize(cnoid::vnoid::Visualizer* viz, cnoid::vnoid::VizInfo& info);
 
 	PlannerCentroid();
 };

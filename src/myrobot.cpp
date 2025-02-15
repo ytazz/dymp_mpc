@@ -144,7 +144,7 @@ void MyRobot::Init(cnoid::SimpleControllerIO* io){
 }
 
 void MyRobot::Visualize(const cnoid::vnoid::Timer& timer){
-    VizInfo  info;
+    cnoid::vnoid::VizInfo  info;
     info.iframe    = timer.time/0.025;
     info.ilines    = 0;
     info.isphere   = 0;
@@ -170,7 +170,7 @@ void MyRobot::Control(){
         planner_wb->ToRobot();
         planner_centroid->ToRobot();
 
-        //Visualize(timer);
+        Visualize(timer);
 
         Robot::Actuate(timer, base, joint);
 

@@ -672,7 +672,7 @@ void PlannerCentroid::SavePlan(){
     fclose(file);
 }
 
-void PlannerCentroid::Visualize(cnoid::vnoid::Visualizer* viz, VizInfo& info){
+void PlannerCentroid::Visualize(cnoid::vnoid::Visualizer* viz, cnoid::vnoid::VizInfo& info){
     if(!mpcInputReady)
         return;
 

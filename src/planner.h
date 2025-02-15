@@ -17,14 +17,6 @@ namespace mpc{
 
 class MyRobot;
 
-struct VizInfo{
-	int iframe;
-	int ibox;
-	int isphere;
-	int icylinder;
-	int ilines;
-};
-
 const dymp::real_t pi  = 3.1415926535;
 
 inline dymp::vec3_t quat_diff(const dymp::quat_t& q0, const dymp::quat_t& q1){

@@ -9,7 +9,7 @@ mpc_timestep        : 0.020
 mpc_timestep_scale  : 1.0
 mpc_num_threads     : 5
 mpc_update_cycle    : 4
-mpc_num_iter        : 3
+mpc_num_iter        : 2
 mpc_delay_mode      : true
 mpc_feedback        : true
 fix_initial_state   : true
@@ -42,7 +42,7 @@ wholebody:
   hand_ori_weight       : [0, 0, 0]
   hand_vel_weight       : [0, 0, 0]
   hand_angvel_weight    : [0, 0, 0]
-  end_force_weight      : [200,200,20]
+  end_force_weight      : [200,200,200]
   end_moment_weight     : [200,200,200]
   #q_weight              : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  0, 0,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  10,  10,   0, 0, 0,    0, 0, 0, 0,  0, 0, 0,    0, 0, 0, 0]
   #qd_weight             : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  0, 0,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  10,  10,   0, 0, 0,    0, 0, 0, 0,  0, 0, 0,    0, 0, 0, 0]

@@ -844,7 +844,7 @@ void PlannerWholebody::SavePlan(){
     fclose(file);
 }
 
-void PlannerWholebody::Visualize(cnoid::vnoid::Visualizer* viz, VizInfo& info){
+void PlannerWholebody::Visualize(cnoid::vnoid::Visualizer* viz, cnoid::vnoid::VizInfo& info){
     dymp::Wholebody* wb = GetWholebody();
     int N = mpcPredictionSteps;
     int nlink = (int)wb->links.size();
