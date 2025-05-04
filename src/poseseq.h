@@ -21,12 +21,14 @@ public:
         bool   isTouching;
         bool   isToeContact;
         bool   isHeelContact;
+        //int    iface;
 
         dymp::vec3_t   pos;
-        dymp::quat_t   ori;
-        dymp::vec3_t   angle;
         dymp::vec3_t   vel;
+        dymp::quat_t   ori;
         dymp::vec3_t   angvel;
+        dymp::vec3_t   angle;
+        dymp::vec3_t   angled;
         dymp::vec3_t   partingDirection;
 
         IKLink();
@@ -57,27 +59,29 @@ public:
 
         Key();
     };
+    /*struct Face{
+        dymp::vec3_t  pos;
+        dymp::quat_t  ori;
+    };*/
 
     double  playSpeed;
-    double  minContactDuration;
-    double  maxDuration;
     int     initialPhase;
     string  pseqFile;
     string  baseLinkName;
     vector<string>  endLinkName;
     
-    MyRobot*     robot;
-    vector<Key>  keys;
+    MyRobot*      robot;
+    vector<Key>   keys;
+    //vector<Face>  faces;
 
 public:
     void           Read   (const YAML::Node& node);
     bool           Load   (const YAML::Node& node);
     void           Init   ();
     pair<int,int>  Find   (double t);
-    //double         GetTime(double t0, int k);
     double         GetTime(int k);
     void           Setup  (double t, dymp::Wholebody* wb, dymp::WholebodyData& d);
-	
+    
 	Poseseq();
 
 };

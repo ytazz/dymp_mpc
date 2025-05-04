@@ -4,13 +4,13 @@ cutoff_step_size    : 0.1
 min_step_size       : 1.0
 max_step_size       : 1.0
 correction_rate     : 0.5
-mpc_prediction_steps: 15
+mpc_prediction_steps: 30
 mpc_timestep        : 0.020
 mpc_timestep_scale  : 1.0
 mpc_num_threads     : 1
 mpc_update_cycle    : 5
 mpc_num_iter        : 50
-mpc_delay_mode      : true
+mpc_delay_mode      : false
 mpc_feedback        : true
 fix_initial_state   : true
 fix_initial_input   : false
@@ -18,13 +18,13 @@ parallelize         : false
 enable_sparse       : false
 verbose             : false
 save_plan           : true
-save_comptime       : false
+save_comptime       : true
 centroid:
   body_range_min    : [-0.1, -0.1, -0.25]
   body_range_max    : [ 0.1,  0.1,  0.25]
-  duration_min      : 0.0
+  duration_min      : 0.05
   duration_max      : 10.0
-  swing_height      : 0.02
+  swing_height      : 0.10
   swing_slope       : 0.10
   swing_lift_margin : 0.0
   swing_land_margin : 0.0
@@ -37,7 +37,8 @@ centroid:
   #end_interpolation          : "cycloid_global"
   end_interpolation          : "polynomial"
   compl_weight               : 1000
-  enable_feedback     : false
+  enable_feedback     : true
+  save_traj           : true
   end:
    -
     base_pos      : [ 0.0, -0.05,   0.0]
@@ -72,17 +73,20 @@ centroid:
      -
       pos: [ 10.0, -10.0,  0.0]
   initial_weight        : 1.0
-  terminal_weight       : 1.0
+  terminal_weight       : 10.0
   centroid_pos_weight   : [1,1,10]
   centroid_ori_weight   : [1,1,1]
   centroid_vel_weight   : [1,1,1]
   centroid_L_weight     : [1,1,1]
-  time_weight           : 100
-  duration_weight       : 100
-  end_pos_weight        : [1,1,1]
-  end_ori_weight        : [1,1,1]
-  end_vel_weight        : [1,1,1]
-  end_angvel_weight     : [1,1,1]
+  time_weight           : 5
+  duration_weight       : 5
+  end_pos_weight        : [2,2]
+  end_ori_weight        : 1
+  end_vel_weight        : [1,1]
+  end_angvel_weight     : 1
   end_stiffness_weight  : 1
+  end_cop_weight        : [10,10]
   end_cmp_weight        : [10,10]
+  end_torsion_weight    : 10
+  end_force_weight      : [10,10,10]
   end_moment_weight     : [10,10,10]

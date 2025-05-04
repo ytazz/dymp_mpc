@@ -40,6 +40,8 @@ public:
     dymp::vec3_t Lprev[4];
     dymp::real_t tprev;
     dymp::real_t tprevSwitch;
+
+    dymp::real_t disturbance_magnitude, disturbance_angle, disturbance_time, disturbance_duration;
 	
 public:
     void  Read     (const YAML::Node& node);

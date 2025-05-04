@@ -3,7 +3,7 @@
 #include "kinematics.h"
 #include "planner_wholebody.h"
 
-#include <rollpitchyaw.h>
+#include <dymp/rollpitchyaw.h>
 
 using namespace std;
 
@@ -15,10 +15,8 @@ namespace dymp{
 namespace mpc{
 
 Poseseq::Poseseq(){
-    playSpeed          = 1.0;
-    minContactDuration = 0.2;
-    maxDuration        = 0.5;
-    initialPhase       = 0;
+    playSpeed    = 1.0;
+    initialPhase = 0;
 }
 
 Poseseq::IKLink::IKLink(){            
@@ -27,6 +25,7 @@ Poseseq::IKLink::IKLink(){
     angle            = dymp::zero3;
     vel              = dymp::zero3;
     angvel           = dymp::zero3;
+    angled           = dymp::zero3;
     partingDirection = dymp::ez;
     
     name = "";
@@ -49,8 +48,6 @@ Poseseq::Key::Key(){
 
 void Poseseq::Read(const YAML::Node& node){
     ReadDouble(playSpeed         , node["play_speed"]          );
-    ReadDouble(minContactDuration, node["min_contact_duration"]);
-    ReadDouble(maxDuration       , node["max_duration"]        );
     ReadInt   (initialPhase      , node["initial_phase"]       );
     ReadString(pseqFile          , node["pseq_file"]           );
     ReadString(baseLinkName      , node["base_link_name"]      );
@@ -90,7 +87,7 @@ bool Poseseq::Load(const YAML::Node& node){
             ReadMatrix3(rot, ikLinkNode["rotation"]);
             lnk.pos   = trn;
             lnk.ori   = Quaternion(rot);
-            lnk.angle = cnoid::vnoid::ToRollPitchYaw(lnk.ori);
+            lnk.angle = dymp::ToRollPitchYaw(lnk.ori);
 
             ReadBool   (lnk.isTouching , ikLinkNode["isTouching"]);
             ReadVector3(lnk.partingDirection, ikLinkNode["partingDirection"]);
@@ -102,8 +99,6 @@ bool Poseseq::Load(const YAML::Node& node){
 
             key.pose.ikLinks.push_back(lnk);
         }
-
-        //YAML::Node jointsNode = poseNode["joints"];
 
         keys.push_back(key);
     }
@@ -191,13 +186,44 @@ void Poseseq::Init(){
         key.maxTransitionTime /= playSpeed;
     }
 
-    // calc velocity by difference
+    // modify yaw angle considering multiple turns
     int N = (int)keys.size()-1;
+    for(int k = 0; k <= N; k++){
+        Key& key = keys[k];
+
+        if(key.pose.baseIndex != -1){
+            IKLink& base = key.pose.ikLinks[key.pose.baseIndex];
+            if(k > 0 && keys[k-1].basePrev != -1){
+                Key& keyPrev = keys[keys[k-1].basePrev];
+                IKLink& basePrev = keyPrev.pose.ikLinks[keyPrev.pose.baseIndex];
+                while(base.angle.z() < basePrev.angle.z() - pi)
+                    base.angle.z() += 2*pi;
+                while(base.angle.z() > basePrev.angle.z() + pi)
+                    base.angle.z() -= 2*pi;                
+            }
+        }    
+        for(int i = 0; i < nend; i++){
+            if(key.pose.endIndex[i] != -1){
+                IKLink& end = key.pose.ikLinks[key.pose.endIndex[i]];
+                if(k > 0 && keys[k-1].endPrev[i] != -1){
+                    Key& keyPrev = keys[keys[k-1].endPrev[i]];
+                    IKLink& endPrev = keyPrev.pose.ikLinks[keyPrev.pose.endIndex[i]];
+                    while(end.angle.z() < endPrev.angle.z() - pi)
+                        end.angle.z() += 2*pi;
+                    while(end.angle.z() > endPrev.angle.z() + pi)
+                        end.angle.z() -= 2*pi;                
+                }
+            }
+        }
+    }
+
+    // calc velocity by difference
     dymp::real_t t0 = 0.0, t1 = 0.0, s0 = 0.0, s1 = 0.0;
+    dymp::real_t TT = 0.0;  //< transition time
     dymp::vec3_t p0 = dymp::zero3;
     dymp::vec3_t p1 = dymp::zero3;
-    dymp::quat_t q0 = dymp::unit_quat();
-    dymp::quat_t q1 = dymp::unit_quat();
+    dymp::vec3_t a0 = dymp::zero3;
+    dymp::vec3_t a1 = dymp::zero3;
     for(int k = 0; k <= N; k++){
         Key& key = keys[k];
     
@@ -208,39 +234,46 @@ void Poseseq::Init(){
                 IKLink& basePrev = keyPrev.pose.ikLinks[keyPrev.pose.baseIndex];
                 t0 = keyPrev.time;
                 p0 = basePrev.pos;
-                q0 = basePrev.ori;
+                a0 = basePrev.angle;
             }
             else{
                 t0 = key.time;
                 p0 = base.pos;
-                q0 = base.ori;
+                a0 = base.angle;
             }
             if(k < N && keys[k+1].baseNext != -1){
                 Key& keyNext = keys[keys[k+1].baseNext];
                 IKLink& baseNext = keyNext.pose.ikLinks[keyNext.pose.baseIndex];
                 t1 = keyNext.time;
+                TT = keyNext.maxTransitionTime;
                 p1 = baseNext.pos;
-                q1 = baseNext.ori;
+                a1 = baseNext.angle;
             }
             else{
                 t1 = key.time;
+                TT = 0.0;
                 p1 = base.pos;
-                q1 = base.ori;
+                a1 = base.angle;
             }
 
-            //base.vel = (p1 - p0)/(t1 - t0);
-            //quat_t qrel = q0.Conjugated()*q1;
-            //base.angvel = (qrel.Theta()*qrel.Axis())/(t1 - t0);
-            base.vel    = dymp::zero3;
-            base.angvel = dymp::zero3;
+            if(key.time < t1 - TT){
+                base.vel    = dymp::zero3;
+                base.angled = dymp::zero3;
+            }
+            else{
+                base.vel    = (p1 - p0)/(t1 - t0);
+                base.angled = (a1 - a0)/(t1 - t0);
+            }
         }
 
         for(int i = 0; i < nend; i++){
             if(key.pose.endIndex[i] != -1){
                 IKLink& end = key.pose.ikLinks[key.pose.endIndex[i]];
-                if(end.isTouching){
+
+                // zero velocity if surface contact
+                if(end.isTouching && !(end.isToeContact || end.isHeelContact)){
                     end.vel    = dymp::zero3;
-                    end.angvel = dymp::zero3;
+                    end.angled = dymp::zero3;
                     continue;
                 }
 
@@ -249,31 +282,36 @@ void Poseseq::Init(){
                     IKLink& endPrev = keyPrev.pose.ikLinks[keyPrev.pose.endIndex[i]];
                     t0 = keyPrev.time;
                     p0 = endPrev.pos;
-                    q0 = endPrev.ori;
+                    a0 = endPrev.angle;
                 }
                 else{
                     t0 = key.time;
                     p0 = end.pos;
-                    q0 = end.ori;
+                    a0 = end.angle;
                 }
                 if(k < N && keys[k+1].endNext[i] != -1){
                     Key& keyNext = keys[keys[k+1].endNext[i]];
                     IKLink& endNext = keyNext.pose.ikLinks[keyNext.pose.endIndex[i]];
                     t1 = keyNext.time;
+                    TT = keyNext.maxTransitionTime;
                     p1 = endNext.pos;
-                    q1 = endNext.ori;
+                    a1 = endNext.angle;
                 }
                 else{
                     t1 = key.time;
+                    TT = 0.0;
                     p1 = end.pos;
-                    q1 = end.ori;
+                    a1 = end.angle;
                 }
 
-                //end.vel = (p1 - p0)/(t1 - t0);
-                //quat_t qrel = q0.Conjugated()*q1;
-                //end.angvel = (qrel.Theta()*qrel.Axis())/(t1 - t0);
-                end.vel    = dymp::zero3;
-                end.angvel = dymp::zero3;
+                if(key.time < t1 - TT){
+                    end.vel    = dymp::zero3;
+                    end.angled = dymp::zero3;
+                }
+                else{
+                    end.vel    = (p1 - p0)/(t1 - t0);
+                    end.angled = (a1 - a0)/(t1 - t0);
+                }
             }
         }
 
@@ -299,18 +337,36 @@ void Poseseq::Init(){
                 if(k < N && keys[k+1].jointNext[i] != -1){
                     Key& keyNext = keys[keys[k+1].jointNext[i]];
                     t1 = keyNext.time;
+                    TT = keyNext.maxTransitionTime;
                     s1 = keyNext.pose.q[keyNext.pose.jointIndex[i]];
                 }
                 else{
                     t1 = key.time;
+                    TT = 0.0;
                     s1 = key.pose.q[key.pose.jointIndex[i]];
                 }
 
-                //key.pose.qd[key.pose.jointIndex[i]] = (s1 - s0)/(t1 - t0);
-                key.pose.qd[key.pose.jointIndex[i]] = 0.0;
+                if(key.time < t1 - TT){
+                    key.pose.qd[key.pose.jointIndex[i]] = 0.0;
+                }
+                else{
+                    key.pose.qd[key.pose.jointIndex[i]] = (s1 - s0)/(t1 - t0);
+                }
             }
         }
     }
+    /*
+    // generate contact face info
+    faces.clear();
+    for(int k = 0; k < (int)keys.size(); k++){
+        for(int i = 0; i < nend; i++){
+            if(key.pose.endIndex[i] != -1){
+                IKLink& end = key.pose.ikLinks[key.pose.endIndex[i]];
+
+            }
+        }
+    }
+    */
     /*
     // print info
     for(int k = 0; k < (int)keys.size(); k++){
@@ -344,52 +400,8 @@ pair<int, int> Poseseq::Find(double t){
     }
     return make_pair(N-1, N-1);
 }
-/*
-double Poseseq::GetTime(double t0, int k){
-    if(k == 0)
-        return t0;
-
-    int N = (int)keys.size();
-    pair<int, int> kp = Find(t0);
-
-    return keys[std::min(kp.first + k, N-1)].time;
-}
-*/
 
 double Poseseq::GetTime(int k){
-    /*
-    int iphase = initialPhase;
-    int k0   = 0;
-    int idiv = 0;
-    int ndiv;
-    real_t tau;
-    real_t dtau;
-    //while(iphase < (int)keys.size()-1){
-    while(true){
-        if(idiv == 0){
-            if(iphase < (int)keys.size()-1){
-                tau = keys[iphase+1].time - keys[iphase+0].time;
-                ndiv = (int)(ceil(tau/maxDuration));
-                dtau = tau/ndiv;
-            }
-            else{
-                dtau = 0.3;
-                tau  = inf;
-                ndiv = iinf;
-                DSTR << "end of keys" << endl;
-            }
-        }
-        if(k0 == k)
-            break;
-
-        if(++idiv == ndiv){
-            iphase++;
-            idiv = 0;
-        }
-        k0++;
-    }
-    return (keys[iphase].time + idiv*dtau) - keys[initialPhase].time;
-    */
     return keys[std::min(initialPhase + k, (int)keys.size()-1)].time - keys[initialPhase].time;
 }       
 
@@ -404,13 +416,15 @@ void Poseseq::Setup(double t, dymp::Wholebody* wb, dymp::WholebodyData& d){
     Key& k0 = keys[kp.first ];
     Key& k1 = keys[kp.second];
     
-    dymp::real_t t0, t1, h, s;
+    dymp::real_t t0, t1, tclip;
 
     // base
-    dymp::vec3_t pbase = dymp::zero3;
-    dymp::vec3_t vbase = dymp::zero3;
-    dymp::quat_t qbase = dymp::unit_quat();
-    dymp::vec3_t wbase = dymp::zero3;
+    dymp::vec3_t pbase  = dymp::zero3;
+    dymp::vec3_t vbase  = dymp::zero3;
+    dymp::quat_t qbase  = dymp::unit_quat();
+    dymp::vec3_t wbase  = dymp::zero3;
+    dymp::vec3_t abase  = dymp::zero3;
+    dymp::vec3_t adbase = dymp::zero3;
     if(k0.basePrev == -1){
         // should not come here
     }
@@ -424,39 +438,28 @@ void Poseseq::Setup(double t, dymp::Wholebody* wb, dymp::WholebodyData& d){
     else{
         Key& kprev = keys[k0.basePrev];
         Key& knext = keys[k1.baseNext];
-
-        dymp::vec3_t p0 = kprev.pose.ikLinks[kprev.pose.baseIndex].pos;
-        dymp::quat_t q0 = kprev.pose.ikLinks[kprev.pose.baseIndex].ori;
-        dymp::vec3_t v0 = kprev.pose.ikLinks[kprev.pose.baseIndex].vel;
-        dymp::vec3_t w0 = kprev.pose.ikLinks[kprev.pose.baseIndex].angvel;
-
-        dymp::vec3_t p1 = knext.pose.ikLinks[knext.pose.baseIndex].pos;
-        dymp::quat_t q1 = knext.pose.ikLinks[knext.pose.baseIndex].ori;
-        dymp::vec3_t v1 = knext.pose.ikLinks[knext.pose.baseIndex].vel;
-        dymp::vec3_t w1 = knext.pose.ikLinks[knext.pose.baseIndex].angvel;
-
-        t1 = knext.time;
+        IKLink& basePrev = kprev.pose.ikLinks[kprev.pose.baseIndex];
+        IKLink& baseNext = knext.pose.ikLinks[knext.pose.baseIndex];
+        dymp::vec3_t p0  = basePrev.pos;
+        dymp::vec3_t v0  = basePrev.vel;
+        dymp::vec3_t a0  = basePrev.angle;
+        dymp::vec3_t ad0 = basePrev.angled;
+        
+        dymp::vec3_t p1  = baseNext.pos;
+        dymp::vec3_t v1  = baseNext.vel;
+        dymp::vec3_t a1  = baseNext.angle;
+        dymp::vec3_t ad1 = baseNext.angled;
+        
         t0 = std::max(kprev.time, knext.time - knext.maxTransitionTime);
-        /*t0 = kprev.time;
-        pbase = InterpolatePos   (t, t0, p0, v0, t1, p1, v1, Interpolate::LinearDiff);
-        vbase = InterpolateVel   (t, t0, p0, v0, t1, p1, v1, Interpolate::LinearDiff);
-        qbase = InterpolateOri   (t, t0, q0, w0, t1, q1, w1, Interpolate::SlerpDiff);
-        wbase = InterpolateAngvel(t, t0, q0, w0, t1, q1, w1, Interpolate::SlerpDiff);
-        */
-        h  = t1 - t0;
-        s  = std::min(std::max(0.0, (t - t0)/(t1 - t0)), 1.0);
-    
-        pbase = (1-s)*p0 + s*p1;
-        vbase = (p1 - p0)/h;
-
-        Eigen::AngleAxisd qrel(q0.conjugate()*q1);
-        dymp::vec3_t axis  = qrel.axis ();
-        dymp::real_t theta = qrel.angle();
-        if(theta > pi)
-            theta -= 2*pi;
-
-        qbase = q0*dymp::rot_quat((s*theta)*axis);
-        wbase = q0*((theta*axis)/h);
+        t1 = knext.time;
+        tclip = std::max(t, t0);
+        
+        pbase  = interpolate_pos_cubic(tclip, t0, p0, v0 , t1, p1, v1 );
+        vbase  = interpolate_vel_cubic(tclip, t0, p0, v0 , t1, p1, v1 );
+        abase  = interpolate_pos_cubic(tclip, t0, a0, ad0, t1, a1, ad1);
+        adbase = interpolate_vel_cubic(tclip, t0, a0, ad0, t1, a1, ad1);
+        qbase  = dymp::FromRollPitchYaw(abase);
+        wbase  = dymp::VelocityFromRollPitchYaw(abase, adbase);
     }
 
     // joint
@@ -479,109 +482,83 @@ void Poseseq::Setup(double t, dymp::Wholebody* wb, dymp::WholebodyData& d){
             dymp::real_t qd0 = kprev.pose.qd[kprev.pose.jointIndex[i]];
             dymp::real_t qd1 = knext.pose.qd[knext.pose.jointIndex[i]];
         
-            //h = (knext.time - kprev.time)/playSpeed;
-            //s = std::min(std::max(0.0, (playSpeed*t - kprev.time)/(knext.time - kprev.time)), 1.0);
-            t1 = knext.time;
             t0 = std::max(kprev.time, knext.time - knext.maxTransitionTime);
-            //t0 = kprev.time;
-            //d.q [i] = InterpolatePos(t, t0, q0, qd0, t1, q1, qd1, Interpolate::Cubic);
-            //d.qd[i] = InterpolateVel(t, t0, q0, qd0, t1, q1, qd1, Interpolate::Cubic);
-            h  = t1 - t0;
-            s  = std::min(std::max(0.0, (t - t0)/(t1 - t0)), 1.0);
-    
-            d.joints[i].q  = (1-s)*q0 + s*q1;
-            d.joints[i].qd = (q1 - q0)/h;
-            //d.qd[i] = 0.0;
+            t1 = knext.time;
+            tclip = std::max(t, t0);
+            
+            d.joints[i].q  = interpolate_pos_cubic(tclip, t0, q0, qd0, t1, q1, qd1);
+            d.joints[i].qd = interpolate_vel_cubic(tclip, t0, q0, qd0, t1, q1, qd1);
         }
         d.joints[i].qdd  = 0.0;
         d.joints[i].qddd = 0.0;
     }
 
     // end
-    dymp::vec3_t pe = dymp::zero3;
-    dymp::quat_t qe = dymp::unit_quat();
-    dymp::vec3_t ve = dymp::zero3;
-    dymp::vec3_t we = dymp::zero3;
+    dymp::vec3_t pend  = dymp::zero3;
+    dymp::vec3_t vend  = dymp::zero3;
+    dymp::quat_t qend  = dymp::unit_quat();
+    dymp::vec3_t wend  = dymp::zero3;
+    dymp::vec3_t aend  = dymp::zero3;
+    dymp::vec3_t adend = dymp::zero3;
     bool   contact = false;
     bool   toe     = false;
     bool   heel    = false;
+    dymp::vec3_t normal;
+
     for(int i = 0; i < nend; i++){
         if(k0.endPrev[i] == -1){
             // should not come here
         }
         else if(k0.endPrev[i] == k1.endNext[i] || k1.endNext[i] == -1){
             Key& kprev = keys[k0.endPrev[i]];
-            pe = kprev.pose.ikLinks[kprev.pose.endIndex[i]].pos;
-            qe = kprev.pose.ikLinks[kprev.pose.endIndex[i]].ori;
-            ve = dymp::zero3;
-            we = dymp::zero3;
+            IKLink& endPrev = kprev.pose.ikLinks[kprev.pose.endIndex[i]];
+            
+            pend = endPrev.pos;
+            qend = endPrev.ori;
+            vend = dymp::zero3;
+            wend = dymp::zero3;
 
-            contact = kprev.pose.ikLinks[kprev.pose.endIndex[i]].isTouching;
-            toe     = kprev.pose.ikLinks[kprev.pose.endIndex[i]].isToeContact;
-            heel    = kprev.pose.ikLinks[kprev.pose.endIndex[i]].isHeelContact;
+            contact = endPrev.isTouching;
+            toe     = endPrev.isToeContact;
+            heel    = endPrev.isHeelContact;
+            normal  = FromRollPitchYaw(endPrev.angle)*endPrev.partingDirection;
         }
         else{
             Key& kprev = keys[k0.endPrev[i]];
             Key& knext = keys[k1.endNext[i]];
+            IKLink& endPrev = kprev.pose.ikLinks[kprev.pose.endIndex[i]];
+            IKLink& endNext = knext.pose.ikLinks[knext.pose.endIndex[i]];
 
-            dymp::vec3_t p0 = kprev.pose.ikLinks[kprev.pose.endIndex[i]].pos;
-            dymp::quat_t q0 = kprev.pose.ikLinks[kprev.pose.endIndex[i]].ori;
-            dymp::vec3_t v0 = kprev.pose.ikLinks[kprev.pose.endIndex[i]].vel;
-            dymp::vec3_t w0 = kprev.pose.ikLinks[kprev.pose.endIndex[i]].angvel;
-
-            dymp::vec3_t p1 = knext.pose.ikLinks[knext.pose.endIndex[i]].pos;
-            dymp::quat_t q1 = knext.pose.ikLinks[knext.pose.endIndex[i]].ori;
-            dymp::vec3_t v1 = knext.pose.ikLinks[knext.pose.endIndex[i]].vel;
-            dymp::vec3_t w1 = knext.pose.ikLinks[knext.pose.endIndex[i]].angvel;
-
-            //h = (knext.time - kprev.time)/playSpeed;
-            //s = std::min(std::max(0.0, (playSpeed*t - kprev.time)/(knext.time - kprev.time)), 1.0);
-            t1 = knext.time;
-            t0 = std::max(kprev.time, knext.time - knext.maxTransitionTime);
-            //t0 = kprev.time;
+            dymp::vec3_t p0  = endPrev.pos;
+            dymp::vec3_t v0  = endPrev.vel;
+            dymp::vec3_t a0  = endPrev.angle;
+            dymp::vec3_t ad0 = endPrev.angled;
         
-            /*
-            pe = InterpolatePos   (t, t0, p0, v0, t1, p1, v1, Interpolate::Cubic);
-            ve = InterpolateVel   (t, t0, p0, v0, t1, p1, v1, Interpolate::Cubic);
-            qe = InterpolateOri   (t, t0, q0, w0, t1, q1, w1, Interpolate::SlerpDiff);
-            we = InterpolateAngvel(t, t0, q0, w0, t1, q1, w1, Interpolate::SlerpDiff);
-            */
-            // before contact transition
-            if(t < t0){
-                pe = p0;
-                ve = dymp::zero3;
-                qe = q0;
-                we = dymp::zero3;
-            }
-            // during transition
-            else{
-                h  = t1 - t0;
-                s  = std::min(std::max(0.0, (t - t0)/(t1 - t0)), 1.0);
-
-                pe = (1-s)*p0 + s*p1;
-                ve = (p1 - p0)/h;
-
-                Eigen::AngleAxisd qrel(q0.conjugate()*q1);
-                dymp::vec3_t axis  = qrel.axis ();
-                dymp::real_t theta = qrel.angle();
-                if(theta > pi)
-                    theta -= 2*pi;
-
-                qe = q0*dymp::rot_quat((s*theta)*axis);
-                we = q0*((theta*axis)/h);
-            }
-            /*
-            */
+            dymp::vec3_t p1  = endNext.pos;
+            dymp::vec3_t v1  = endNext.vel;
+            dymp::vec3_t a1  = endNext.angle;
+            dymp::vec3_t ad1 = endNext.angled;
+            
+            t0 = std::max(kprev.time, knext.time - knext.maxTransitionTime);
+            t1 = knext.time;
+            tclip = std::max(t, t0);
+        
+            pend  = interpolate_pos_cubic(tclip, t0, p0, v0 , t1, p1, v1 );
+            vend  = interpolate_vel_cubic(tclip, t0, p0, v0 , t1, p1, v1 );
+            aend  = interpolate_pos_cubic(tclip, t0, a0, ad0, t1, a1, ad1);
+            adend = interpolate_vel_cubic(tclip, t0, a0, ad0, t1, a1, ad1);
+            qend  = dymp::FromRollPitchYaw(aend);
+            wend  = dymp::VelocityFromRollPitchYaw(aend, adend);
+            
             // k0 touch and k1 touch -> touch
             // k0 float and k1 touch -> float
-            // k0 touch and k1 float -> (t >= t0 ? float : touch)
-            contact = (  kprev.pose.ikLinks[kprev.pose.endIndex[i]].isTouching && 
-                        (knext.pose.ikLinks[knext.pose.endIndex[i]].isTouching || (knext.time > k1.time)/*(t < t0)*/)
+            // k0 touch and k1 float -> (t1 < tnext ? float : touch)
+            contact = (  endPrev.isTouching && 
+                        (endNext.isTouching || (k1.time < knext.time) )
                        );
-            toe = contact && (kprev.pose.ikLinks[kprev.pose.endIndex[i]].isToeContact ||
-                              knext.pose.ikLinks[knext.pose.endIndex[i]].isToeContact);
-            heel = contact && (kprev.pose.ikLinks[kprev.pose.endIndex[i]].isHeelContact ||
-                               knext.pose.ikLinks[knext.pose.endIndex[i]].isHeelContact);
+            toe  = contact && (endPrev.isToeContact  || endNext.isToeContact );
+            heel = contact && (endPrev.isHeelContact || endNext.isHeelContact);
+            normal = FromRollPitchYaw(endPrev.angle)*endPrev.partingDirection;
         }
 
         dymp::WholebodyData::End& dend = d.ends[i];
@@ -601,34 +578,36 @@ void Poseseq::Setup(double t, dymp::Wholebody* wb, dymp::WholebodyData& d){
         if(contact){
             if(toe){
                 dend.state   = dymp::Wholebody::ContactState::Line;
-                dend.cop_min = dymp::vec3_t( 0.15, -0.05, -0.1);
-                dend.cop_max = dymp::vec3_t( 0.15,  0.05,  0.1);
-                dend.pos_te  = dymp::vec3_t( 0.15,  0.0 ,  0.0);
+                dend.cop_min = dymp::vec3_t( 0.15, -0.05, -0.01);
+                dend.cop_max = dymp::vec3_t( 0.15,  0.05,  0.01);
+                dend.pos_tc  = dymp::vec3_t( 0.15,  0.0 ,  0.0  );
             }
             else if(heel){
                 dend.state   = dymp::Wholebody::ContactState::Line;
-                dend.cop_min = dymp::vec3_t(-0.1, -0.05, -0.1);
-                dend.cop_max = dymp::vec3_t(-0.1,  0.05,  0.1);
-                dend.pos_te  = dymp::vec3_t( 0.1 ,  0.0 ,  0.0);
+                dend.cop_min = dymp::vec3_t(-0.1, -0.05, -0.01);
+                dend.cop_max = dymp::vec3_t(-0.1,  0.05,  0.01);
+                dend.pos_tc  = dymp::vec3_t( 0.1 , 0.0 ,  0.0  );
             }
             else{
                 dend.state   = dymp::Wholebody::ContactState::Surface;
                 dend.cop_min = dymp::vec3_t(-0.10, -0.05, -0.1);
                 dend.cop_max = dymp::vec3_t( 0.15,  0.05,  0.1);
-                dend.pos_te  = dymp::vec3_t( 0.0, 0.0, 0.0);
+                dend.pos_tc  = dymp::vec3_t( 0.0 ,  0.0 ,  0.0);
             }
-            dend.mu      = 1.0;
-            dend.pos_tc  = pe + qe*(wb->ends[i].offset + dend.pos_te);
-            dend.pos_rc  = dymp::unit_quat();
+            dend.mu      = 2.0;
+            dend.normal  = normal;
+            //dend.pos_tc  = pend + qend*(wb->ends[i].offset + dend.pos_te);
+            //dend.pos_rc  = dymp::unit_quat();
         }
 
-        dend.pos_t_abs = pe + qe*wb->ends[i].offset;
-        dend.pos_r_abs = qe;
-        dend.vel_t_abs = ve;
-        dend.vel_r_abs = we;
+        // take care of ankle-to-foot offset here
+        dend.pos_t_abs = pend + qend*wb->ends[i].offset;
+        dend.pos_r_abs = qend;
+        dend.vel_t_abs = vend + wend.cross(qend*wb->ends[i].offset);
+        dend.vel_r_abs = wend;
 
         vector<double> qleg;
-        robot->kinematics->CalcIK(qbase.conjugate()*(pe - pbase), qbase.conjugate()*qe, (i == 0 ? -1.0 : +1.0), qleg);
+        robot->kinematics->CalcIK(qbase.conjugate()*(pend - pbase), qbase.conjugate()*qend, (i == 0 ? -1.0 : +1.0), qleg);
         for(int j = 0; j < 6; j++){
             d.joints[robot->kinematics->legJointIndices[i][j]].q = qleg[j];
         }

@@ -161,13 +161,19 @@ void Planner::Read(const YAML::Node& node){
     ReadBool  (saveComptime   , node["save_comptime"    ]);
 }
 
-void Planner::Init(){        
+void Planner::CreateThreads(){
 	threads.resize(mpcNumThreads);
 	for(int i = 0; i < mpcNumThreads; i++){
 		threads[i] = CreateThread();
 		threads[i]->id = i;
 	}
     threadIndex = 0;
+}
+
+void Planner::InitThreads(){
+	for(int i = 0; i < mpcNumThreads; i++){
+        threads[i]->Init();
+	}
 }
 
 void Planner::InitState(){
@@ -177,7 +183,6 @@ void Planner::InitState(){
 void Planner::RunThreads(){
     threadIndex = 0;
     for(int i = 0; i < mpcNumThreads; i++){
-        threads[i]->Init();
         threads[i]->mpcIterCount = 0;
         threads[i]->evInitial.Set();
         threads[i]->Run();

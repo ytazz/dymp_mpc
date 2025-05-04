@@ -41,7 +41,7 @@ public:
 	void SetupFromCentroid(dymp::real_t t, dymp::Centroid* centroid, const vector<dymp::CentroidData>& d_cen_array, dymp::Wholebody* wb, dymp::WholebodyData& d);
 	void SetupWeights     (dymp::WholebodyData& d, bool is_initial, bool is_terminal);
 	void SetupWeights     (dymp::CentroidData&  d, bool is_initial, bool is_terminal);
-	void Convert          (const dymp::WholebodyData& d_wb, dymp::CentroidData& d, int idiv);
+	void Convert          (const dymp::WholebodyData& d_wb, dymp::Centroid* cen, dymp::CentroidData& d, int idiv);
 	bool CalcIK           (const dymp::vec3_t& pos, const dymp::quat_t& ori, double sign, vector<double>& q);
     
 	virtual void Read  (const YAML::Node& node);

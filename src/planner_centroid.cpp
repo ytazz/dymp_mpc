@@ -20,11 +20,8 @@ PlannerThreadCentroid::PlannerThreadCentroid(Planner* _planner):PlannerThread(_p
     centroid->param.I(1,1) = 10.0;//planner->robot->nominal_inertia.y();
     centroid->param.I(2,2) =  5.0;//planner->robot->nominal_inertia.z();
     centroid->param.g  = 9.8;
-    centroid->param.mu = 1.0;
+    //centroid->param.mu = 1.0;
     
-    centroid->param.contactMargin = 0.0;
-    
-    //world->scale.Set(1.0, 1.0, 1.0);
     centroid->SetScaling();
 }
 
@@ -88,14 +85,18 @@ PlannerCentroid::PlannerCentroid(){
 	centroidLWeight    = Vector3(1.0, 1.0, 1.0);
     timeWeight         = 1.0;
     durationWeight     = 1.0;
-    endPosWeight       = Vector3(1.0, 1.0, 1.0);
-	endVelWeight       = Vector3(1.0, 1.0, 1.0);
-	endOriWeight       = Vector3(1.0, 1.0, 1.0);
-	endAngvelWeight    = Vector3(1.0, 1.0, 1.0);
+    endPosWeight       = Vector2(1.0, 1.0);
+	endVelWeight       = Vector2(1.0, 1.0);
+	endOriWeight       = 1.0;
+	endAngvelWeight    = 1.0;
     endStiffnessWeight = 1.0;
+    endCopWeight       = Vector2(1.0, 1.0);
     endCmpWeight       = Vector2(1.0, 1.0);
+    endTorsionWeight   = 1.0;
+    endForceWeight     = Vector3(1.0, 1.0, 1.0);
     endMomentWeight    = Vector3(1.0, 1.0, 1.0);
     savePlan           = false;
+    saveTraj           = false;
     enableFeedback     = false;
 }
 
@@ -104,8 +105,6 @@ void PlannerCentroid::Read(const YAML::Node& node){
 
     const YAML::Node& cenNode = node["centroid"];
 
-    ReadVector3(param.bodyRangeMin   , cenNode["body_range_min" ]);
-    ReadVector3(param.bodyRangeMax   , cenNode["body_range_max" ]);
     ReadDouble (param.durationMin    , cenNode["duration_min"   ]);
     ReadDouble (param.durationMax    , cenNode["duration_max"   ]);
     ReadDouble (param.swingHeight    , cenNode["swing_height"   ]);
@@ -135,10 +134,10 @@ void PlannerCentroid::Read(const YAML::Node& node){
         ReadVector3(end.copMin      , endNode["cop_min"      ]);	
         ReadVector3(end.copMax      , endNode["cop_max"      ]);	
         ReadDouble (end.stiffnessMax, endNode["stiffness_max"]);	
-        ReadBool   (end.lockOri     , endNode["lock_ori"     ]);
-        ReadBool   (end.lockCmp     , endNode["lock_cmp"     ]);
-        ReadBool   (end.lockMoment  , endNode["lock_moment"  ]);
-        ReadVector2(end.cmpOffset   , endNode["cmp_offset"   ]);
+        //ReadBool   (end.lockOri     , endNode["lock_ori"     ]);
+        //ReadBool   (end.lockCmp     , endNode["lock_cmp"     ]);
+        //ReadBool   (end.lockMoment  , endNode["lock_moment"  ]);
+        //ReadVector2(end.cmpOffset   , endNode["cmp_offset"   ]);
         ReadVector3(end.posMin      , endNode["pos_min"      ]);	
         ReadVector3(end.posMax      , endNode["pos_max"      ]);	
                 
@@ -159,23 +158,27 @@ void PlannerCentroid::Read(const YAML::Node& node){
         faces.push_back(face);
     }
 
-    ReadDouble (initialWeight     , cenNode["initial_weight"     ]);
-	ReadDouble (terminalWeight    , cenNode["terminal_weight"    ]);
-	ReadVector3(centroidPosWeight , cenNode["centroid_pos_weight"]);
-	ReadVector3(centroidVelWeight , cenNode["centroid_vel_weight"]);
-	ReadVector3(centroidOriWeight , cenNode["centroid_ori_weight"]);
-	ReadVector3(centroidLWeight   , cenNode["centroid_L_weight"  ]);
-	ReadDouble (timeWeight        , cenNode["time_weight"        ]);
-	ReadDouble (durationWeight    , cenNode["duration_weight"    ]);
-	ReadVector3(endPosWeight      , cenNode["end_pos_weight"     ]);
-	ReadVector3(endVelWeight      , cenNode["end_vel_weight"     ]);
-	ReadVector3(endOriWeight      , cenNode["end_ori_weight"     ]);
-	ReadVector3(endAngvelWeight   , cenNode["end_angvel_weight"  ]);
+    ReadDouble (initialWeight     , cenNode["initial_weight"      ]);
+	ReadDouble (terminalWeight    , cenNode["terminal_weight"     ]);
+	ReadVector3(centroidPosWeight , cenNode["centroid_pos_weight" ]);
+	ReadVector3(centroidVelWeight , cenNode["centroid_vel_weight" ]);
+	ReadVector3(centroidOriWeight , cenNode["centroid_ori_weight" ]);
+	ReadVector3(centroidLWeight   , cenNode["centroid_L_weight"   ]);
+	ReadDouble (timeWeight        , cenNode["time_weight"         ]);
+	ReadDouble (durationWeight    , cenNode["duration_weight"     ]);
+	ReadVector2(endPosWeight      , cenNode["end_pos_weight"      ]);
+	ReadVector2(endVelWeight      , cenNode["end_vel_weight"      ]);
+	ReadDouble (endOriWeight      , cenNode["end_ori_weight"      ]);
+	ReadDouble (endAngvelWeight   , cenNode["end_angvel_weight"   ]);
 	ReadDouble (endStiffnessWeight, cenNode["end_stiffness_weight"]);
-	ReadVector2(endCmpWeight      , cenNode["end_cmp_weight"     ]);
-	ReadVector3(endMomentWeight   , cenNode["end_moment_weight"  ]);
+	ReadVector2(endCopWeight      , cenNode["end_cop_weight"      ]);
+	ReadVector2(endCmpWeight      , cenNode["end_cmp_weight"      ]);
+	ReadDouble (endTorsionWeight  , cenNode["end_torsion_weight"  ]);
+	ReadVector3(endForceWeight    , cenNode["end_force_weight"    ]);
+	ReadVector3(endMomentWeight   , cenNode["end_moment_weight"   ]);
 
     ReadBool(enableFeedback, cenNode["enable_feedback"]);
+    ReadBool(saveTraj      , cenNode["save_traj"]);
 }
 
 PlannerThread* PlannerCentroid::CreateThread(){
@@ -191,11 +194,11 @@ void PlannerCentroid::InitState(){
     dymp::Wholebody* wb = robot->planner_wb->GetWholebody();
 
     int nend = (int)centroid->ends.size();
-    nx = 6 + (centroid->param.enableRotation ? 6 : 0) + 1;
+    nx = 6 + 6 + 1;
     nu = 1;
     for(int i = 0; i < nend; i++){
-        nx += 3 + (centroid->ends[i].lockOri ? 0 : 3);
-        nu += 3 + (centroid->ends[i].lockOri ? 0 : 3) + 1 + (centroid->ends[i].lockCmp ? 0 : 2) + (centroid->ends[i].lockMoment ? 0 : 3);
+        nx += 3;
+        nu += 3 + 6;
     }
     
     dx.Allocate(nx);
@@ -212,21 +215,29 @@ void PlannerCentroid::InitState(){
     V .resize (N+1);
     Vx.resize (N+1);
     Vxx.resize(N+1);
-    fx .resize(N);
     for(int k = 0; k <= N; k++){
         data_traj    [k].Init(centroid);
         data_traj_des[k].Init(centroid);
 
         Vx [k].Allocate(nx);
         Vxx[k].Allocate(nx,nx);
-
-        if(k < N){
-            fx[k].Allocate(nx,nx);
-        }
     }
-    I       .Allocate(nx,nx);
-    fxt     .Allocate(nx,nx);
-    fxtr_Vxx.Allocate(nx,nx);
+
+    Vx_int .Allocate(nx);
+    Vxx_int.Allocate(nx,nx);
+
+    // calc scaling matrix
+    sconv.Allocate(nx);
+    int idx = 0;
+    for(int i = 0; i < 3; i++)sconv(idx++) = wb->scale.pt/centroid->scale.pt;
+    for(int i = 0; i < 3; i++)sconv(idx++) = wb->scale.pr/centroid->scale.pr;
+    for(int i = 0; i < 3; i++)sconv(idx++) = wb->scale.vt/centroid->scale.vt;
+    for(int i = 0; i < 3; i++)sconv(idx++) = wb->scale.L /centroid->scale.L;
+    for(int i = 0; i < nend; i++){
+        sconv(idx++) = wb->scale.pt/centroid->scale.pt;
+        sconv(idx++) = wb->scale.pt/centroid->scale.pt;
+        sconv(idx++) = wb->scale.pr/centroid->scale.pr;
+    }
 
     data_wb.Init(wb);
 
@@ -260,6 +271,7 @@ void PlannerCentroid::UpdateState(){
 
     centroid->CalcWrench          (data_cur);
     centroid->CalcComAcceleration (data_cur);
+    centroid->CalcBaseAcceleration(data_cur);
     centroid->CalcBaseAcceleration(data_cur);
     
     data_cur.pos_t += data_cur.vel_t*dt + data_cur.acc_t*(0.5*dt2);
@@ -373,15 +385,13 @@ void PlannerCentroid::UpdateGain(){
         V[k] = centroid->world->solver->V[k];
         vec_copy(centroid->world->solver->Vx [k], Vx [k]);
         mat_copy(centroid->world->solver->Vxx[k], Vxx[k]);
-
-        if(k < N){
-            mat_copy(centroid->world->solver->fx[k], fx[k]);
-        }
     }
 
     if(savePlan)
         SavePlan();
-
+    if(saveTraj)
+        SaveTraj();
+    
     mpcInputReady = true;
 }
 
@@ -392,6 +402,7 @@ void PlannerCentroid::GetInitialState(dymp::CentroidData& d){
         d.vel_t = data_cur.vel_t;
         d.pos_r = data_cur.pos_r;
         d.L     = data_cur.L;
+        //d.L     = data_ref.L;
     }
     else{
         d.pos_t = data_ref.pos_t;
@@ -418,8 +429,8 @@ void PlannerCentroid::GetInitialState(dymp::CentroidData& d){
             dend.pos_r = dend_ref.pos_r;
         }
         
-        dend.iface = dend_ref.iface;
-        dend.state = dend_ref.state;
+        dend.contact = dend_ref.contact;
+        dend.iface   = dend_ref.iface;
     }
     /*
     d.pos_t    = data_cur.pos_t;
@@ -457,17 +468,19 @@ void PlannerCentroid::GetDesiredState(int k, dymp::real_t t, dymp::CentroidData&
         dymp::real_t t1 = robot->poseseq->GetTime(cur_phase+k+1);
         dymp::real_t tau  = t1 - t0;
         dymp::real_t dtau = tau/ndiv;
-        //real_t t0 = robot->poseseq->keys[robot->poseseq->initialPhase+cur_phase+k+0].time - robot->poseseq->keys[robot->poseseq->initialPhase].time;
-        //real_t t1 = robot->poseseq->keys[robot->poseseq->initialPhase+cur_phase+k+1].time - robot->poseseq->keys[robot->poseseq->initialPhase].time;
         for(int idiv = 0; idiv <= ndiv; idiv++){
             robot->poseseq->Setup(t0 + idiv*dtau, wb, data_wb);
-            robot->kinematics->Convert(data_wb, d, idiv);
-
-            // set desired angular momentum as zero
-            //d.L = dymp::zero3;
+            robot->kinematics->Convert(data_wb, centroid, d, idiv);
         }
-        d.time     = t0;
-        d.duration = tau;
+        int nkey = robot->poseseq->keys.size();
+        if(robot->poseseq->initialPhase + cur_phase + k < nkey - 1){
+            d.time     = t0;
+            d.duration = tau;
+        }
+        else{
+            d.time     = t1 + desDuration*(robot->poseseq->initialPhase + cur_phase + k - (nkey - 1));
+            d.duration = desDuration;
+        }
     }
     else{
         robot->kinematics->SetupStandStill(centroid, d);
@@ -495,12 +508,13 @@ void PlannerCentroid::GetDesiredState(int k, dymp::real_t t, dymp::CentroidData&
         dend.vel_t_weight = wt*endVelWeight;
         dend.vel_r_weight = wt*endAngvelWeight;
 
-        dend.stiff_weight  = endStiffnessWeight;
-        dend.cmp_weight    = endCmpWeight;
-        dend.moment_weight = endMomentWeight;
+        dend.stiff_weight   = endStiffnessWeight;
+        dend.cop_weight     = endCopWeight;
+        dend.cmp_weight     = endCmpWeight;
+        dend.torsion_weight = endTorsionWeight;
     }
 
-    centroid->CalcStiffness(d);
+    centroid->ResetEndWrench(d);
 }
 
 bool PlannerCentroid::IsMpcUpdateCycle(){
@@ -511,22 +525,23 @@ bool PlannerCentroid::IsMpcUpdateCycle(){
 
 void PlannerCentroid::Observe(){
     dymp::Centroid* centroid = GetCentroid();
-    
-    data_cur.pos_t = robot->planner_wb->data_cur.centroid.pos_t;
-    data_cur.vel_t = robot->planner_wb->data_cur.centroid.vel_t;
-    data_cur.pos_r = robot->planner_wb->data_cur.centroid.pos_r;
-    data_cur.vel_r = robot->planner_wb->data_cur.centroid.vel_r;        
-    data_cur.L     = robot->planner_wb->data_cur.centroid.L_abs;
+    dymp::WholebodyData& d = robot->planner_wb->data_cur;
+    //dymp::WholebodyData& d = robot->planner_wb->data_ref;
+    data_cur.pos_t = d.centroid.pos_t;
+    data_cur.vel_t = d.centroid.vel_t;
+    data_cur.pos_r = d.centroid.pos_r;
+    data_cur.vel_r = d.centroid.vel_r;        
+    data_cur.L     = d.centroid.L_abs;
 
     int nend = (int)centroid->ends.size();
     for(int i = 0; i < nend; i++){
-        data_cur.ends[i].pos_t = data_cur.pos_t + data_cur.pos_r*robot->planner_wb->data_cur.ends[i].pos_t;
-        data_cur.ends[i].pos_r = data_cur.pos_r*robot->planner_wb->data_cur.ends[i].pos_r;
-        data_cur.ends[i].vel_t = data_cur.vel_t + data_cur.vel_r.cross(data_cur.pos_r*robot->planner_wb->data_cur.ends[i].pos_t) + data_cur.pos_r*robot->planner_wb->data_cur.ends[i].vel_t;
-        data_cur.ends[i].vel_r = data_cur.vel_r + data_cur.pos_r*robot->planner_wb->data_cur.ends[i].vel_r;
+        //data_cur.ends[i].pos_t = data_cur.pos_t + data_cur.pos_r*d.ends[i].pos_t;
+        //data_cur.ends[i].pos_r = data_cur.pos_r*d.ends[i].pos_r;
+        //data_cur.ends[i].vel_t = data_cur.vel_t + data_cur.vel_r.cross(data_cur.pos_r*d.ends[i].pos_t) + data_cur.pos_r*d.ends[i].vel_t;
+        //data_cur.ends[i].vel_r = data_cur.vel_r + data_cur.pos_r*d.ends[i].vel_r;
+        data_cur.ends[i].pos_t = data_ref.ends[i].pos_t;
+        data_cur.ends[i].pos_r = data_ref.ends[i].pos_r;
     }
-    /*
-    */
 }
 
 void PlannerCentroid::SavePlan(){
@@ -554,40 +569,56 @@ void PlannerCentroid::SavePlan(){
     );
     for(int i = 0; i < centroid->ends.size(); i++){
         fprintf(file,
-            "end%d_pos_t_x, end%d_pos_t_y, end%d_pos_t_z, "
-            "end%d_vel_t_x, end%d_vel_t_y, end%d_vel_t_z, "
-            "end%d_pos_r_x, end%d_pos_r_y, end%d_pos_r_z, end%d_pos_r_w, "
-            "end%d_vel_r_x, end%d_vel_r_y, end%d_vel_r_z, "
-            "end%d_des_pos_t_x, end%d_des_pos_t_y, end%d_des_pos_t_z, "
-            "end%d_des_vel_t_x, end%d_des_vel_t_y, end%d_des_vel_t_z, "
-            "end%d_des_pos_r_x, end%d_des_pos_r_y, end%d_des_pos_r_z, end%d_des_pos_r_w, "
-            "end%d_des_vel_r_x, end%d_des_vel_r_y, end%d_des_vel_r_z, "
+            "end%d_pos_t_x, end%d_pos_t_y, "
+            "end%d_vel_t_x, end%d_vel_t_y, "
+            "end%d_pos_r_z, "
+            "end%d_vel_r_z, "
+            "end%d_des_pos_t_x, end%d_des_pos_t_y, "
+            "end%d_des_vel_t_x, end%d_des_vel_t_y, "
+            "end%d_des_pos_r_z, "
+            "end%d_des_vel_r_z, "
             "end%d_stiff, "
+            "end%d_cop_x, end%d_cop_y, "
             "end%d_cmp_x, end%d_cmp_y, "
-            "end%d_mom_x, end%d_mom_y, end%d_mom_z, "
+            "end%d_torsion, "
             "end%d_des_stiff, "
+            "end%d_des_cop_x, end%d_des_cop_y, "
             "end%d_des_cmp_x, end%d_des_cmp_y, "
-            "end%d_des_mom_x, end%d_des_mom_y, end%d_des_mom_z, ",
-            i, i, i,
-            i, i, i,
-            i, i, i, i,
-            i, i, i,
-            i, i, i,
-            i, i, i,
-            i, i, i, i,
-            i, i, i,
+            "end%d_des_torsion, ",
+            i, i,
+            i, i,
+            i,
             i,
             i, i,
-            i, i, i,
-            i,
             i, i,
-            i, i, i
+            i,
+            i,
+            i, i, i, i, i, i,
+            i, i, i, i, i, i
+            );
+    }
+    for(int i = 0; i < centroid->ends.size(); i++){
+        fprintf(file,
+            "end%d_contact, ",
+            i
             );
     }
     for(int i = 0; i < centroid->ends.size(); i++){
         fprintf(file,
             "end%d_iface, ",
             i
+            );
+    }
+    for(int i = 0; i < centroid->ends.size(); i++){
+        fprintf(file,
+            "end%d_alt, end%d_altd, end%d_roll, end%d_rolld, end%d_tilt, end%d_tiltd, ",
+            i, i, i, i, i, i
+            );
+    }
+    for(int i = 0; i < centroid->ends.size(); i++){
+        fprintf(file,
+            "end%d_pos_tc_x, end%d_pos_tc_y, end%d_pos_tc_z, ",
+            i, i, i
             );
     }
     fprintf(file, "\n");
@@ -627,43 +658,173 @@ void PlannerCentroid::SavePlan(){
             dymp::CentroidData::End& dend = d.ends[i];
             dymp::CentroidData::End& dend_des = d_des.ends[i];
             fprintf(file,
-                "%f, %f, %f, "
-                "%f, %f, %f, "
-                "%f, %f, %f, %f, "
-                "%f, %f, %f, "
-                "%f, %f, %f, "
-                "%f, %f, %f, "
-                "%f, %f, %f, %f, "
-                "%f, %f, %f, ",
-                dend.pos_t.x(), dend.pos_t.y(), dend.pos_t.z(), 
-                dend.vel_t.x(), dend.vel_t.y(), dend.vel_t.z(),
-                dend.pos_r.x(), dend.pos_r.y(), dend.pos_r.z(), dend.pos_r.w(), 
-                dend.vel_r.x(), dend.vel_r.y(), dend.vel_r.z(),
-                dend_des.pos_t.x(), dend_des.pos_t.y(), dend_des.pos_t.z(), 
-                dend_des.vel_t.x(), dend_des.vel_t.y(), dend_des.vel_t.z(),
-                dend_des.pos_r.x(), dend_des.pos_r.y(), dend_des.pos_r.z(), dend_des.pos_r.w(), 
-                dend_des.vel_r.x(), dend_des.vel_r.y(), dend_des.vel_r.z()
+                "%f, %f, "
+                "%f, %f, "
+                "%f, "
+                "%f, "
+                "%f, %f, "
+                "%f, %f, "
+                "%f, "
+                "%f, ",
+                dend.pos_t.x(), dend.pos_t.y(), 
+                dend.vel_t.x(), dend.vel_t.y(),
+                dend.pos_r, 
+                dend.vel_r,
+                dend_des.pos_t.x(), dend_des.pos_t.y(), 
+                dend_des.vel_t.x(), dend_des.vel_t.y(),
+                dend_des.pos_r, 
+                dend_des.vel_r
             );
             fprintf(file,
                 "%f, "
                 "%f, %f, "
-                "%f, %f, %f, "
+                "%f, %f, "
+                "%f, "
                 "%f, "
                 "%f, %f, "
-                "%f, %f, %f, ",
+                "%f, %f, "
+                "%f, ",
                 dend.stiff,
+                dend.cop[0], dend.cop[1],
                 dend.cmp[0], dend.cmp[1],
-                dend.moment.x(), dend.moment.y(), dend.moment.z(),
+                dend.torsion,
                 dend_des.stiff,
+                dend_des.cop[0], dend_des.cop[1],
                 dend_des.cmp[0], dend_des.cmp[1],
-                dend_des.moment.x(), dend_des.moment.y(), dend_des.moment.z()
+                dend_des.torsion
             );
         }
         for(int i = 0; i < d.ends.size(); i++){
             dymp::CentroidData::End& dend_des = d_des.ends[i];
             fprintf(file,
                 "%d, ",
+                dend_des.contact
+            );    
+        }
+        for(int i = 0; i < d.ends.size(); i++){
+            dymp::CentroidData::End& dend_des = d_des.ends[i];
+            fprintf(file,
+                "%d, ",
                 dend_des.iface
+            );    
+        }
+        for(int i = 0; i < d.ends.size(); i++){
+            dymp::CentroidData::End& dend_des = d_des.ends[i];
+            fprintf(file,
+                "%f, %f, %f, %f, %f, %f, ",
+                dend_des.alt, dend_des.altd, dend_des.roll, dend_des.rolld, dend_des.tilt, dend_des.tiltd
+            );    
+        }
+        for(int i = 0; i < d.ends.size(); i++){
+            dymp::CentroidData::End& dend_des = d_des.ends[i];
+            fprintf(file,
+                "%f, %f, %f, ",
+                dend_des.pos_tc.x(), dend_des.pos_tc.y(), dend_des.pos_tc.z()
+            );    
+        }
+        fprintf(file, "\n");
+    }
+
+    fclose(file);
+}
+
+void PlannerCentroid::SaveTraj(){
+    dymp::Centroid* centroid = GetCentroid();
+
+    static int idx = 0;
+    char filename[256];
+    sprintf(filename, "plan_centroid_traj.csv");
+    FILE* file = fopen(filename, "w");
+    idx++;
+
+    fprintf(file, 
+        "time, "
+        "cen_pos_t_x, cen_pos_t_y, cen_pos_t_z, "
+        "cen_vel_t_x, cen_vel_t_y, cen_vel_t_z, "
+        "cen_pos_r_x, cen_pos_r_y, cen_pos_r_z, cen_pos_r_w, "
+        "cen_L_x, cen_L_y, cen_L_z, "
+    );
+    for(int i = 0; i < centroid->ends.size(); i++){
+        fprintf(file,
+            "end%d_pos_t_x, end%d_pos_t_y, end%d_pos_t_z, "
+            "end%d_vel_t_x, end%d_vel_t_y, end%d_vel_t_z, "
+            "end%d_pos_r_x, end%d_pos_r_y, end%d_pos_r_z, end%d_pos_r_w, "
+            "end%d_vel_r_x, end%d_vel_r_y, end%d_vel_r_z, "
+            "end%d_force_t_x, end%d_force_t_y, end%d_force_t_z, "
+            "end%d_force_r_x, end%d_force_r_y, end%d_force_r_z, ",
+            i, i, i,
+            i, i, i,
+            i, i, i, i,
+            i, i, i,
+            i, i, i,
+            i, i, i
+            );
+    }
+    for(int i = 0; i < centroid->ends.size(); i++){
+        fprintf(file,
+            "end%d_contact, ",
+            i
+            );
+    }
+    for(int i = 0; i < centroid->ends.size(); i++){
+        fprintf(file,
+            "end%d_iface, ",
+            i
+            );
+    }
+    fprintf(file, "\n");
+
+    int N = mpcPredictionSteps;
+    double t0 = data_traj[0].time;
+    double tf = data_traj[N].time;
+    const double dt = 0.01;
+    dymp::CentroidData d;
+    int r = 0;
+    const int rmax = 10000;  //< to limit data size in case of NaN
+    for(double t = t0; t <= tf && r < rmax; t += dt, r++){
+        centroid->CalcState(t, data_traj, d);
+
+        fprintf(file,
+            "%f, "
+            "%f, %f, %f, "
+            "%f, %f, %f, "
+            "%f, %f, %f, %f, "
+            "%f, %f, %f, ",
+            d.time,
+            d.pos_t.x(), d.pos_t.y(), d.pos_t.z(), 
+            d.vel_t.x(), d.vel_t.y(), d.vel_t.z(),
+            d.pos_r.x(), d.pos_r.y(), d.pos_r.z(), d.pos_r.w(),
+            d.L.x(), d.L.y(), d.L.z()
+        );
+        for(int i = 0; i < d.ends.size(); i++){
+            dymp::CentroidData::End& dend = d.ends[i];
+            fprintf(file,
+                "%f, %f, %f, "
+                "%f, %f, %f, "
+                "%f, %f, %f, %f, "
+                "%f, %f, %f, "
+                "%f, %f, %f, "
+                "%f, %f, %f, ",
+                dend.pos_t_abs.x(), dend.pos_t_abs.y(), dend.pos_t_abs.z(), 
+                dend.vel_t_abs.x(), dend.vel_t_abs.y(), dend.vel_t_abs.z(),
+                dend.pos_r_abs.x(), dend.pos_r_abs.y(), dend.pos_r_abs.z(), dend.pos_r_abs.w(), 
+                dend.vel_r_abs.x(), dend.vel_r_abs.y(), dend.vel_r_abs.z(),
+                dend.force_t.x(), dend.force_t.y(), dend.force_t.z(),
+                dend.force_r.x(), dend.force_r.y(), dend.force_r.z()
+            );
+        }
+        for(int i = 0; i < d.ends.size(); i++){
+            dymp::CentroidData::End& dend = d.ends[i];
+            fprintf(file,
+                "%d, ",
+                dend.contact
+            );    
+        }
+        for(int i = 0; i < d.ends.size(); i++){
+            dymp::CentroidData::End& dend = d.ends[i];
+            fprintf(file,
+                "%d, ",
+                dend.iface
             );    
         }
         fprintf(file, "\n");
@@ -681,34 +842,27 @@ void PlannerCentroid::Visualize(cnoid::vnoid::Visualizer* viz, cnoid::vnoid::Viz
     int N    = (int)world->ticks.size()-1;
     int nend = (int)centroid->ends.size();
 
-    //DSTR << "centroid time: " << cur_time << endl;
-    
     for(int k = 0; k < N; k++){
-        //planner_lip->biped->CreateSnapshot(planner_lip->world->ticks[k]->time);
-        //auto key = (DiMP::CentroidKey*)centroid->traj.GetKeypoint(graph->ticks[k]);
         dymp::CentroidData& d = data_traj[k];
 
         cnoid::vnoid::Visualizer::Sphere* sphereCom = viz->data->GetSphere(info.iframe, info.isphere++);
         sphereCom->color  = Eigen::Vector3f(1.0f, 0.0f, 1.0f);
         sphereCom->alpha  = 0.5f;
-        //sphereCom->pos    = FromSpr(key->var_pos_t->val);
         sphereCom->pos    = d.pos_t;
         sphereCom->radius = 0.015f;
 
         for(int i = 0; i < nend; i++){
             // skip floating ends
-            if(data_traj_des[k].ends[i].iface == -1)
+            if(data_traj_des[k].ends[i].contact == false)
                 continue;
 
             cnoid::vnoid::Visualizer::Box*  boxEnd = viz->data->GetBox(info.iframe, info.ibox++);        
-            if(data_traj_des[k].ends[i].iface == -1)
+            if(data_traj_des[k].ends[i].contact == false)
                  boxEnd->color = Eigen::Vector3f(0.5f, 0.0f, 0.5f);
             else boxEnd->color = Eigen::Vector3f(1.0f, 0.0f, 1.0f);
             boxEnd->alpha = 0.5f;
-            //boxEnd->pos   = FromSpr(key->ends[i].var_pos_t->val);
-            //boxEnd->ori   = FromSpr(key->ends[i].var_pos_r->val);
-            boxEnd->pos   = d.ends[i].pos_t;
-            boxEnd->ori   = d.ends[i].pos_r;
+            boxEnd->pos   = d.ends[i].pos_t_abs;
+            boxEnd->ori   = d.ends[i].pos_r_abs;
             boxEnd->size  = Vector3(0.2, 0.1, 0.01);
         }
     }
@@ -724,7 +878,7 @@ void PlannerCentroid::Visualize(cnoid::vnoid::Visualizer* viz, cnoid::vnoid::Viz
         dymp::real_t t1 = data_traj[k+1].time;
 
         const int ndiv = 10;
-        for(int j = 0; j < ndiv; j++){
+        for(int j = 0; j <= ndiv; j++){
             dymp::real_t a  = (dymp::real_t)j/(dymp::real_t)ndiv;
             dymp::real_t t  = (1-a)*t0 + a*t1;
             centroid->CalcState(t, data_traj[k+0], data_traj[k+1], dtmp[1]);
@@ -736,10 +890,10 @@ void PlannerCentroid::Visualize(cnoid::vnoid::Visualizer* viz, cnoid::vnoid::Viz
                 viz->data->GetLineIndices (info.iframe, info.ilines)[ii+1] = iv+1;
                 iv += 2;
                 ii += 2;
-
+                
                 for(int i = 0; i < nend; i++){
-                    viz->data->GetLineVertices(info.iframe, info.ilines)[iv+0] = Eigen::Vector3f((float)dtmp[0].ends[i].pos_t.x(), (float)dtmp[0].ends[i].pos_t.y(), (float)dtmp[0].ends[i].pos_t.z());
-                    viz->data->GetLineVertices(info.iframe, info.ilines)[iv+1] = Eigen::Vector3f((float)dtmp[1].ends[i].pos_t.x(), (float)dtmp[1].ends[i].pos_t.y(), (float)dtmp[1].ends[i].pos_t.z());
+                    viz->data->GetLineVertices(info.iframe, info.ilines)[iv+0] = Eigen::Vector3f((float)dtmp[0].ends[i].pos_t_abs.x(), (float)dtmp[0].ends[i].pos_t_abs.y(), (float)dtmp[0].ends[i].pos_t_abs.z());
+                    viz->data->GetLineVertices(info.iframe, info.ilines)[iv+1] = Eigen::Vector3f((float)dtmp[1].ends[i].pos_t_abs.x(), (float)dtmp[1].ends[i].pos_t_abs.y(), (float)dtmp[1].ends[i].pos_t_abs.z());
                     viz->data->GetLineIndices (info.iframe, info.ilines)[ii+0] = iv+0;
                     viz->data->GetLineIndices (info.iframe, info.ilines)[ii+1] = iv+1;
                     iv += 2;
@@ -752,57 +906,9 @@ void PlannerCentroid::Visualize(cnoid::vnoid::Visualizer* viz, cnoid::vnoid::Viz
     lines->numVertices = iv;
     lines->numIndices  = ii;
     info.ilines++;
-    /*
-    auto key_f = (DiMP::CentroidKey*)centroid->traj.GetKeypoint(graph->ticks.back());
-    real_t tf = key_f->tick->time;
-    Visualizer::Lines* lines = viz->data->GetLines(info.iframe, info.ilines);
-    lines->color = Vector3f(1.0f, 0.0f, 1.0f);
-    lines->alpha = 0.5f;
-    lines->width = 1.0f;
-    int iv = 0;
-    int ii = 0;
-    vec3_t pc, pcprev;
-    vector<vec3_t> pe, peprev;
-    pe    .resize(nend);
-    peprev.resize(nend);
-    for(real_t t = 0.0; t <= tf; t += 0.05){
-        vec3_t p, v, w, a;
-        quat_t q;
-		centroid->ComState(t, p, v, a);
-        pc = p;
-
-        for(int i = 0; i < nend; i++){
-	        centroid->EndState(t, i, p, q, v, w);
-            pe[i] = p;
-        }
-        
-        if(t != 0.0){
-            viz->data->GetLineVertices(info.iframe, info.ilines)[iv+0] = Vector3f((float)pcprev.x, (float)pcprev.y, (float)pcprev.z);
-            viz->data->GetLineVertices(info.iframe, info.ilines)[iv+1] = Vector3f((float)pc    .x, (float)pc    .y, (float)pc    .z);
-            viz->data->GetLineIndices (info.iframe, info.ilines)[ii+0] = iv+0;
-            viz->data->GetLineIndices (info.iframe, info.ilines)[ii+1] = iv+1;
-            pcprev = pc;
-            iv += 2;
-            ii += 2;
-
-            for(int i = 0; i < nend; i++){
-                viz->data->GetLineVertices(info.iframe, info.ilines)[iv+0] = Vector3f((float)peprev[i].x, (float)peprev[i].y, (float)peprev[i].z);
-                viz->data->GetLineVertices(info.iframe, info.ilines)[iv+1] = Vector3f((float)pe    [i].x, (float)pe    [i].y, (float)pe    [i].z);
-                viz->data->GetLineIndices (info.iframe, info.ilines)[ii+0] = iv+0;
-                viz->data->GetLineIndices (info.iframe, info.ilines)[ii+1] = iv+1;
-                iv += 2;
-                ii += 2;
-                peprev[i] = pe[i];
-            }
-        }
-    }
-    lines->numVertices = iv;
-    lines->numIndices  = ii;
-    info.ilines++;
-    */
 }
 
-void PlannerCentroid::CalcQuadWeight(dymp::real_t tf, dymp::real_t& Vconst, dymp::Vector& Vy, dymp::Matrix& Vyy){
+void PlannerCentroid::CalcQuadWeight(dymp::real_t tf, dymp::real_t wf, dymp::real_t& Vconst, dymp::Vector& Vy, dymp::Matrix& Vyy){
     int N = mpcPredictionSteps;
     int k = 0;
     for( ; k < N; k++){
@@ -824,41 +930,38 @@ void PlannerCentroid::CalcQuadWeight(dymp::real_t tf, dymp::real_t& Vconst, dymp
 
     int ny = Vy.n;
 
-    Vconst = s*V[k+1] + (1-s)*V[k+0];
-    //Vconst = 0.0;
+    // linear interpolation of value function
+    Vconst = wf*(s*V[k+1] + (1-s)*V[k+0]);
     
-    // last element of Vx and last row/column of Vxx correspond to time variable of centroid
-    // these parts are not copied to Vy, Vyy
-    vec_copy(Vx[k+0].SubVector(0,ny), Vy, 1-s);
-    vec_add (Vx[k+1].SubVector(0,ny), Vy, s  );
-    //vec_clear(Vy);
-    
-    mat_copy(Vxx[k+0].SubMatrix(0,0,ny,ny), Vyy, 1-s);
-    mat_add (Vxx[k+1].SubMatrix(0,0,ny,ny), Vyy, s  );
-    
-    /* 
-    // clear entries outside (12,12) upper-left block
-    for(int i = 0; i < Vyy.n; i++){
-        if(i >= 12)
-            Vy(i) = 0.0;
-        for(int j = 0; j < Vyy.m; j++){
-            if(i >= 12 || j >= 12)
-                Vyy(i,j) = 0.0;
+    vec_clear(Vx_int);
+    vec_copy(Vx[k+0].SubVector(0,nx), Vx_int, 1-s);
+    vec_add (Vx[k+1].SubVector(0,nx), Vx_int, s  );
+
+    mat_clear(Vxx_int);
+    mat_copy(Vxx[k+0].SubMatrix(0,0,nx,nx), Vxx_int, 1-s);
+    mat_add (Vxx[k+1].SubMatrix(0,0,nx,nx), Vxx_int, s  );
+
+    // create state conversion matrix
+    S.Allocate(nx, ny);
+    mat_clear(S);
+
+    for(int i = 0; i < 12; i++){
+        S(i,i) = sconv(i);
+    }
+    int nend = (int)data_traj[k].ends.size();
+    for(int i = 0; i < nend; i++){
+        if(data_traj[k].ends[i].contact){
+            S(12+3*i+0, 12+6*i+0) = sconv(12+3*i+0);
+            S(12+3*i+1, 12+6*i+1) = sconv(12+3*i+1);
+            S(12+3*i+2, 12+6*i+5) = sconv(12+3*i+2);
         }
     }
-    */
-    /*
-    // fxt = s*I + (1-s)*fxk
-    mat_identity(I);
-    mat_copy(I, fxt, s);
-    mat_add (fx[k], fxt, 1-s);
-    
-    //
-    Vconst = V[k+1];
-    mattr_vec_mul(fxt, Vx[k+1], Vy, 1.0, 0.0);
-    mattr_mat_mul(fxt, Vxx[k+1], fxtr_Vxx, 1.0, 0.0);
-    mat_mat_mul(fxtr_Vxx, fxt, Vyy, 1.0, 0.0);
-    */
+
+    // apply state transformation and multiply by terminal weight
+    Str_Vxx.Allocate(ny, nx);
+    mattr_vec_mul(S, Vx_int , Vy, wf, 0.0);
+    mattr_mat_mul(S, Vxx_int, Str_Vxx, 1.0, 0.0);
+    mat_mat_mul(Str_Vxx, S, Vyy, wf, 0.0);
 }
 
 }

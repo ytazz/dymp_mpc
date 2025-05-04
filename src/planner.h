@@ -134,10 +134,11 @@ public:
 	
 	virtual PlannerThread* CreateThread() = 0;
 
-	virtual void Read     (const YAML::Node& node);
-	virtual void Init     ();
-	virtual void InitState();
-	virtual void Observe  ();
+	virtual void Read         (const YAML::Node& node);
+	virtual void CreateThreads();
+	virtual void InitThreads  ();
+	virtual void InitState    ();
+	virtual void Observe      ();
 	virtual void InterpolateReference();
 	virtual void UpdateInput();
 	virtual void UpdateState();

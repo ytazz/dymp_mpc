@@ -1,7 +1,7 @@
 ﻿#include "kinematics.h"
 #include "myrobot.h"
 
-#include <rollpitchyaw.h>
+#include <dymp/rollpitchyaw.h>
 
 #include <cnoid/ExecutablePath>
 
@@ -122,7 +122,13 @@ void Kinematics::LoadLinksFromBody(dymp::Wholebody* wb){
                 wb->joints.resize(lnk.ijoint + 1);
             }
             ReadDouble (wb->joints[lnk.ijoint].rotor_inertia, linkNode["joint_axis_inertia"]);
-            ReadVector2(wb->joints[lnk.ijoint].pos_range    , linkNode["joint_range"]);
+
+            vec2_t r;
+            ReadVector2(r, linkNode["joint_range"]);
+
+            // deg to rad
+            wb->joints[lnk.ijoint].pos_range[0] = dymp::deg_to_rad(r[0]);
+            wb->joints[lnk.ijoint].pos_range[1] = dymp::deg_to_rad(r[1]);
         }
         if(jointType == "fixed"){
             // skip fix joints
@@ -144,11 +150,10 @@ void Kinematics::LoadLinksFromBody(dymp::Wholebody* wb){
     }
 
     for(int i = 0; i < (int)wb->links.size(); i++){
-        wb->links[i].iparent = name_to_id[parents[i]];
+        auto it = name_to_id.find(parents[i]);
+        wb->links[i].iparent = (it != name_to_id.end() ? it->second : -1);
         wb->links[i].iend    = -1;
     }
-
-    int hoge = 0;
 }
 
 void Kinematics::SetupStandStill(dymp::Wholebody* wb, dymp::WholebodyData& d){
@@ -180,27 +185,6 @@ void Kinematics::SetupStandStill(dymp::Wholebody* wb, dymp::WholebodyData& d){
     for(int i = 0; i < End::Num; i++){
         dymp::WholebodyData::End&  dend = d.ends[i];
         
-        //if(i == End::ChestP){
-        //    dend.pos_t_abs = pc + qf*dymp::vec3_t(0.0, 0.0, torsoLength);
-        //    dend.pos_r_abs = qf;
-        //    dend.vel_t_abs = vc + wf.cross(qf*dymp::vec3_t(0.0, 0.0, torsoLength));
-        //    dend.vel_r_abs = wf;
-        //    dend.state = dymp::Wholebody::ContactState::Free;
-        //}
-        //if(i == End::HandR){
-        //    dend.pos_t_abs = pc + qf*handOffset[0];
-        //    dend.pos_r_abs = qf;
-        //    dend.vel_t_abs = vc + wf.cross(qf*handOffset[0]);
-        //    dend.vel_r_abs = wf;
-        //    dend.state = dymp::Wholebody::ContactState::Free;
-        //}
-        //if(i == End::HandL){
-        //    dend.pos_t_abs = pc + qf*handOffset[1];
-        //    dend.pos_r_abs = qf;
-        //    dend.vel_t_abs = vc + wf.cross(qf*handOffset[1]);
-        //    dend.vel_r_abs = wf;
-        //    dend.state = dymp::Wholebody::ContactState::Free;
-        //}
         if(i == End::FootR || i == End::FootL){
             bool   contact = true;
             pe = dymp::vec3_t(0.0, (i == End::FootR ? -0.08 : 0.08), 0.0);
@@ -222,9 +206,8 @@ void Kinematics::SetupStandStill(dymp::Wholebody* wb, dymp::WholebodyData& d){
                 dend.mu      = 1.0;
                 dend.cop_min = dymp::vec3_t(-0.10, -0.05, -0.1);
                 dend.cop_max = dymp::vec3_t(+0.15,  0.05,  0.1);
-                dend.pos_te  = dymp::vec3_t( 0.0, 0.0, 0.0);
-                dend.pos_tc  = pe + qe*dend.pos_te;
-                dend.pos_rc  = dymp::unit_quat();
+                dend.pos_tc  = dymp::vec3_t( 0.0, 0.0, 0.0);
+                dend.normal  = ez;
             }
 
             dend.pos_t_abs = pe;
@@ -241,21 +224,20 @@ void Kinematics::SetupStandStill(dymp::Centroid* centroid, dymp::CentroidData& d
     d.vel_t = dymp::zero3;
     d.vel_r = dymp::zero3;
     
-    //for(int i = 0; i < End::Num; i++){
     for(int i = 0; i < 2; i++){
         dymp::CentroidData::End&  dend = d.ends[i];
         
-        dend.pos_t = dymp::vec3_t(0.0, (i == 0 ? -0.08 : 0.08), 0.0);
-        dend.pos_r = dymp::unit_quat();
-        dend.vel_t = dymp::zero3;
-        dend.vel_r = dymp::zero3;
-        dend.iface = 0;
+        dend.pos_t   = dymp::vec2_t(0.0, (i == 0 ? -0.08 : 0.08));
+        dend.pos_r   = 0.0;
+        dend.vel_t   = dymp::zero2;
+        dend.vel_r   = 0.0;
+        dend.contact = true;
+        dend.iface   = 0;
     }
 }
 
 void Kinematics::SetupFromCentroid(real_t t, dymp::Centroid* centroid, const vector<dymp::CentroidData>& d_cen_array, dymp::Wholebody* wb, dymp::WholebodyData& d){
     dymp::CentroidData d_cen;
-    //d_cen.Init(centroid);
     centroid->CalcState(t, d_cen_array, d_cen);
     
     d.centroid.pos_t = d_cen.pos_t;
@@ -267,82 +249,81 @@ void Kinematics::SetupFromCentroid(real_t t, dymp::Centroid* centroid, const vec
     d.centroid.L_abs   = d_cen.L;
     d.centroid.L_local = d_cen.Llocal[0];
 
-    // com only
-    //return;
-    
     for(int i = 0; i < End::Num; i++){
         dymp::WholebodyData::End&  dend = d.ends[i];
         
-        //if(i == End::ChestP){
-        //    dend.pos_t_abs = d.centroid.pos_t + d.centroid.pos_r*dymp::vec3_t(0.0, 0.0, torsoLength);
-        //    dend.pos_r_abs = d.centroid.pos_r;
-        //    dend.vel_t_abs = d.centroid.vel_t + d.centroid.vel_r.cross(d.centroid.pos_r*dymp::vec3_t(0.0, 0.0, torsoLength));
-        //    dend.vel_r_abs = d.centroid.vel_r;
-        //    dend.state = dymp::Wholebody::ContactState::Free;
-        //}
-        //if(i == End::HandR){
-        //    dend.pos_t_abs = d.centroid.pos_t + d.centroid.pos_r*handOffset[0];
-        //    dend.pos_r_abs = d.centroid.pos_r;
-        //    dend.vel_t_abs = d.centroid.vel_t + d.centroid.vel_r.cross(d.centroid.pos_r*handOffset[0]);
-        //    dend.vel_r_abs = d.centroid.vel_r;
-        //    dend.state = dymp::Wholebody::ContactState::Free;
-        //}
-        //if(i == End::HandL){
-        //    dend.pos_t_abs = d.centroid.pos_t + d.centroid.pos_r*handOffset[1];
-        //    dend.pos_r_abs = d.centroid.pos_r;
-        //    dend.vel_t_abs = d.centroid.vel_t + d.centroid.vel_r.cross(d.centroid.pos_r*handOffset[1]);
-        //    dend.vel_r_abs = d.centroid.vel_r;
-        //    dend.state = dymp::Wholebody::ContactState::Free;
-        //}
         if(i == End::FootR || i == End::FootL){
             dymp::CentroidData::End&  dend_cen = d_cen.ends[i];
-			if(dend_cen.iface == -1){
-                dend.force_t = dymp::zero3;
-                dend.force_r = dymp::zero3;
-            }
-            else{
-                dend.force_t = dend_cen.force_t;
-                dend.force_r = dend_cen.force_r;
-            }
-         
-            if(dend_cen.iface == -1){
+
+            if(dend_cen.contact == false){
                 dend.state  = dymp::Wholebody::ContactState::Free;
             }
             else{
-                dend.state   = dymp::Wholebody::ContactState::Surface;
-                dend.mu      = 1.0;
-                dend.cop_min = dymp::vec3_t(-0.10, -0.05, -0.1);
-                dend.cop_max = dymp::vec3_t(+0.15,  0.05,  0.1);
-                dend.pos_te  = dymp::vec3_t( 0.0, 0.0, 0.0);
-                dend.pos_tc  = dend_cen.pos_t + dend_cen.pos_r*dend.pos_te;
-                dend.pos_rc  = dymp::unit_quat();
+                const double eps = 0.01;
+                if(std::abs(dend_cen.tilt) < eps)
+                    dend.state = dymp::Wholebody::ContactState::Surface;
+                else 
+                    dend.state = dymp::Wholebody::ContactState::Line;
+                dend.mu      = dend_cen.mu;
+                dend.cop_min = dend_cen.cop_min;
+                dend.cop_max = dend_cen.cop_max;
+                dend.pos_tc  = dend_cen.pos_tc;
+                dend.normal  = centroid->faces[dend_cen.iface].normal;
+                //dend.pos_tc  = dymp::zero3;
+                //dend.pos_rc  = dymp::unit_quat();
             }
+            /*
+            */
 
-            dend.pos_t_abs = dend_cen.pos_t;
-            dend.pos_r_abs = dend_cen.pos_r;
-            dend.vel_t_abs = dend_cen.vel_t;
-            dend.vel_r_abs = dend_cen.vel_r;
+            dend.pos_t_abs = dend_cen.pos_t_abs;
+            dend.pos_r_abs = dend_cen.pos_r_abs;
+            dend.vel_t_abs = dend_cen.vel_t_abs;
+            dend.vel_r_abs = dend_cen.vel_r_abs;
+
+			dend.force_t = dend_cen.force_t;
+            dend.force_r = dend_cen.force_r;            
         }
     }
 }
 
-void Kinematics::Convert(const dymp::WholebodyData& d_wb, dymp::CentroidData& d, int idiv){
+void Kinematics::Convert(const dymp::WholebodyData& d_wb, dymp::Centroid* cen, dymp::CentroidData& d, int idiv){
     if(idiv == 0){
         d.pos_t = d_wb.centroid.pos_t;
         d.vel_t = d_wb.centroid.vel_t;
         d.pos_r = d_wb.centroid.pos_r;
         d.vel_r = d_wb.centroid.vel_r;
         d.L     = d_wb.centroid.L_abs;
+        //d.L = zero3;
 
         int nend = (int)d.ends.size();
         for(int i = 0; i < nend; i++){
-            d.ends[i].pos_t  = d_wb.ends[i].pos_t_abs;
-            d.ends[i].pos_r  = d_wb.ends[i].pos_r_abs;
-            d.ends[i].vel_t  = d_wb.ends[i].vel_t_abs;
-            d.ends[i].vel_r  = d_wb.ends[i].vel_r_abs;
-            d.ends[i].iface  = (d_wb.ends[i].state == dymp::Wholebody::ContactState::Free ? -1 : 0);
-            d.ends[i].state  =  d_wb.ends[i].state;
-            d.ends[i].pos_tc =  d_wb.ends[i].pos_te;
+            d.ends[i].pos_t_abs = d_wb.ends[i].pos_t_abs;
+            d.ends[i].pos_r_abs = d_wb.ends[i].pos_r_abs;
+            d.ends[i].vel_t_abs = d_wb.ends[i].vel_t_abs;
+            d.ends[i].vel_r_abs = d_wb.ends[i].vel_r_abs;
+
+            d.ends[i].contact = (d_wb.ends[i].state != dymp::Wholebody::ContactState::Free);
+            d.ends[i].mu      = d_wb.ends[i].mu;
+            d.ends[i].cop_min = d_wb.ends[i].cop_min;
+            d.ends[i].cop_max = d_wb.ends[i].cop_max;
+            d.ends[i].pos_tc  = d_wb.ends[i].pos_tc;
+        }
+
+        // find contact face
+        for(int i = 0; i < nend; i++){
+            //if(d.ends[i].contact){
+                vec3_t pos_tc_abs = d.ends[i].pos_t_abs + d.ends[i].pos_r_abs*d.ends[i].pos_tc;
+                int iface = cen->FindFace(pos_tc_abs, d_wb.ends[i].normal);
+                if(iface == -1){
+                    iface = cen->CreateFace(pos_tc_abs, d_wb.ends[i].normal);
+                }
+                d.ends[i].iface = iface;
+            //}
+            //else{
+            //    d.ends[i].iface = 0;
+            //}
+
+            cen->CalcEndState(i, d, false);
         }
     }
 

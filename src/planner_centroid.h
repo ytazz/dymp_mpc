@@ -34,14 +34,18 @@ public:
 	dymp::vec3_t   centroidLWeight;
 	dymp::real_t   timeWeight;
 	dymp::real_t   durationWeight;
-	dymp::vec3_t   endPosWeight;
-	dymp::vec3_t   endVelWeight;
-	dymp::vec3_t   endOriWeight;
-	dymp::vec3_t   endAngvelWeight;
+	dymp::vec2_t   endPosWeight;
+	dymp::vec2_t   endVelWeight;
+	dymp::real_t   endOriWeight;
+	dymp::real_t   endAngvelWeight;
 	dymp::real_t   endStiffnessWeight;
+	dymp::vec2_t   endCopWeight;
 	dymp::vec2_t   endCmpWeight;
+	dymp::real_t   endTorsionWeight;
+	dymp::vec3_t   endForceWeight;
 	dymp::vec3_t   endMomentWeight;
     bool           enableFeedback;
+	bool           saveTraj;
 	
 	dymp::real_t  cur_time;
 	int     cur_phase;
@@ -49,8 +53,9 @@ public:
 	vector<dymp::CentroidData>  data_traj, data_traj_des;
 	vector<dymp::real_t> V;
 	vector<dymp::Vector> Vx;
-	vector<dymp::Matrix> Vxx, fx;
-	dymp::Matrix  fxt, fxtr_Vxx, I;
+	vector<dymp::Matrix> Vxx;
+	dymp::Vector  Vx_int, sconv;
+	dymp::Matrix  Vxx_int, S, Str_Vxx;
 	
 	dymp::WholebodyData  data_wb;
 
@@ -60,7 +65,8 @@ public:
 public:
 	dymp::Centroid* GetCentroid();
 	void SavePlan();
-	void CalcQuadWeight(dymp::real_t tf, dymp::real_t& Vconst, dymp::Vector& Vy, dymp::Matrix& Vyy);
+	void SaveTraj();
+	void CalcQuadWeight(dymp::real_t tf, dymp::real_t wf, dymp::real_t& Vconst, dymp::Vector& Vy, dymp::Matrix& Vyy);
 
 	virtual PlannerThread*  CreateThread();
 	virtual void  UpdateInput  ();

@@ -51,16 +51,19 @@ void PlannerThreadWholebody::Init(){
     // timestep is one after scaling
     h  = 1.0;//planner_wb->mpcTimestep;
     h2 = h*h;
+
+    
 }
 
 void PlannerThreadWholebody::Setup(){
     wb->Shift(/*planner->mpcUpdateCycle*planner->robot->timer.dt*/planner->mpcTimestep);
 	wb->Setup();
-    wb->Reset(false);
-    //wb->Reset(true);
+    wb->Reset(!planner_wb->enableWarmstart);
     world->solver->InitDDP();
 
-    if(planner_wb->useCentroid && planner_wb->robot->planner_centroid->mpcInputReady){
+    PlannerCentroid* planner_centroid = planner_wb->robot->planner_centroid;
+
+    if(planner_wb->useCentroid && planner_centroid->mpcInputReady){
         // use custom quadratic weight for terminal cost
         int N  = planner_wb->mpcPredictionSteps;
         int ny = world->solver->cost[N]->dim;
@@ -70,20 +73,13 @@ void PlannerThreadWholebody::Setup(){
 
         // get value function from centroidal mpc
         dymp::real_t tf = planner_wb->mpcInitialTime + N*planner_wb->mpcTimestep;
-        planner_wb->robot->planner_centroid->CalcQuadWeight(
-            tf,
+        planner_centroid->CalcQuadWeight(
+            tf, 
+            planner_wb->terminalWeight,
             world->solver->cost[N]->Vconst,
             world->solver->cost[N]->Vy,
             world->solver->cost[N]->Vyy
         );
-
-        // apply scale conversion and terminal weight
-        for(int i = 0; i < ny; i++){
-            world->solver->cost[N]->Vy(i) *= planner_wb->terminalWeight*planner_wb->sconv(i);
-            for(int j = 0; j < ny; j++){
-                world->solver->cost[N]->Vyy(i,j) *= planner_wb->terminalWeight*planner_wb->sconv(i)*planner_wb->sconv(j);
-            }
-        }
     }
 }
 
@@ -125,6 +121,7 @@ PlannerWholebody::PlannerWholebody(){
     inputMode   = dymp::Wholebody::InputMode::Acceleration;
     usePoseseq  = true;
     useCentroid = true;
+    enableWarmstart = false;
 
     initialWeight      = 1.0;
     terminalWeight     = 1.0;
@@ -132,23 +129,13 @@ PlannerWholebody::PlannerWholebody(){
 	centroidPosWeight    = Vector3(1.0, 1.0, 1.0);
 	centroidVelWeight    = Vector3(1.0, 1.0, 1.0);
 	centroidOriWeight    = Vector3(1.0, 1.0, 1.0);
-	centroidAngvelWeight = Vector3(1.0, 1.0, 1.0);
-    centroidLWeight      = Vector3(1.0, 1.0, 1.0);
-    torsoOriWeight       = Vector3(1.0, 1.0, 1.0);
-	torsoAngvelWeight    = Vector3(1.0, 1.0, 1.0);
-	torsoAngaccWeight    = Vector3(1.0, 1.0, 1.0);
-	footPosWeight        = Vector3(1.0, 1.0, 1.0);
+	centroidLWeight      = Vector3(1.0, 1.0, 1.0);
+    footPosWeight        = Vector3(1.0, 1.0, 1.0);
 	footOriWeight        = Vector3(1.0, 1.0, 1.0);
 	footVelWeight        = Vector3(1.0, 1.0, 1.0);
 	footAngvelWeight     = Vector3(1.0, 1.0, 1.0);
 	footAccWeight        = Vector3(1.0, 1.0, 1.0);
 	footAngaccWeight     = Vector3(1.0, 1.0, 1.0);
-	handPosWeight        = Vector3(1.0, 1.0, 1.0);
-	handOriWeight        = Vector3(1.0, 1.0, 1.0);
-	handVelWeight        = Vector3(1.0, 1.0, 1.0);
-	handAngvelWeight     = Vector3(1.0, 1.0, 1.0);
-	handAccWeight        = Vector3(1.0, 1.0, 1.0);
-	handAngaccWeight     = Vector3(1.0, 1.0, 1.0);
 	endForceWeight       = Vector3(1.0, 1.0, 1.0);
 	endMomentWeight      = Vector3(1.0, 1.0, 1.0);
 }
@@ -173,6 +160,7 @@ void PlannerWholebody::Read(const YAML::Node& node){
 
     ReadBool(usePoseseq , wbNode["use_poseseq"]);
     ReadBool(useCentroid, wbNode["use_centroid"]);
+    ReadBool(enableWarmstart, wbNode["enable_warmstart"]);
 
     ReadDouble(initialWeight        , wbNode["initial_weight" ]);
 	ReadDouble(terminalWeight       , wbNode["terminal_weight"]);
@@ -180,35 +168,19 @@ void PlannerWholebody::Read(const YAML::Node& node){
 	ReadVector3(centroidPosWeight   , wbNode["centroid_pos_weight"   ]);
 	ReadVector3(centroidVelWeight   , wbNode["centroid_vel_weight"   ]);
 	ReadVector3(centroidOriWeight   , wbNode["centroid_ori_weight"   ]);
-	ReadVector3(centroidAngvelWeight, wbNode["centroid_angvel_weight"]);
-    ReadVector3(centroidLWeight     , wbNode["centroid_L_weight"     ]);
-	ReadVector3(torsoOriWeight      , wbNode["torso_ori_weight"      ]);
-	ReadVector3(torsoAngvelWeight   , wbNode["torso_angvel_weight"   ]);
-	ReadVector3(torsoAngaccWeight   , wbNode["torso_angacc_weight"   ]);
+	ReadVector3(centroidLWeight     , wbNode["centroid_L_weight"     ]);
 	ReadVector3(footPosWeight       , wbNode["foot_pos_weight"       ]);
 	ReadVector3(footOriWeight       , wbNode["foot_ori_weight"       ]);
 	ReadVector3(footVelWeight       , wbNode["foot_vel_weight"       ]);
 	ReadVector3(footAngvelWeight    , wbNode["foot_angvel_weight"    ]);
 	ReadVector3(footAccWeight       , wbNode["foot_acc_weight"       ]);
 	ReadVector3(footAngaccWeight    , wbNode["foot_angacc_weight"    ]);
-	ReadVector3(handPosWeight       , wbNode["hand_pos_weight"       ]);
-	ReadVector3(handOriWeight       , wbNode["hand_ori_weight"       ]);
-	ReadVector3(handVelWeight       , wbNode["hand_vel_weight"       ]);
-	ReadVector3(handAngvelWeight    , wbNode["hand_angvel_weight"    ]);
-	ReadVector3(handAccWeight       , wbNode["hand_acc_weight"       ]);
-	ReadVector3(handAngaccWeight    , wbNode["hand_angacc_weight"    ]);
 	ReadVector3(endForceWeight      , wbNode["end_force_weight"      ]);
 	ReadVector3(endMomentWeight     , wbNode["end_moment_weight"     ]);
     ReadVectorDouble(qWeight        , wbNode["q_weight"   ]);
     ReadVectorDouble(qdWeight       , wbNode["qd_weight"  ]);
     ReadVectorDouble(qddWeight      , wbNode["qdd_weight" ]);
     ReadVectorDouble(qdddWeight     , wbNode["qddd_weight" ]);
-    //ReadVectorDouble(qMin           , wbNode["q_min"      ]);
-    //ReadVectorDouble(qMax           , wbNode["q_max"      ]);
-    //ReadVectorDouble(qdMin          , wbNode["qd_min"     ]);
-    //ReadVectorDouble(qdMax          , wbNode["qd_max"     ]);
-    //ReadVectorDouble(qddMin         , wbNode["qdd_min"    ]);
-    //ReadVectorDouble(qddMax         , wbNode["qdd_max"    ]);
     ReadVectorDouble(qRangeWeight   , wbNode["q_range_weight"   ]);
     ReadVectorDouble(qdRangeWeight  , wbNode["qd_range_weight"  ]);
     ReadVectorDouble(qddRangeWeight , wbNode["qdd_range_weight" ]);
@@ -264,20 +236,6 @@ void PlannerWholebody::InitState(){
         qd_prev[i] = data_cur.joints[i].qd;
     }
     time_prev = robot->timer.time;
-
-    // calc scaling matrix
-    dymp::Centroid* cen = robot->planner_centroid->GetCentroid();
-    sconv.Allocate(robot->planner_centroid->nx);
-    int idx = 0;
-    for(int i = 0; i < 3; i++)sconv(idx++) = wb->scale.pt/cen->scale.pt;
-    for(int i = 0; i < 3; i++)sconv(idx++) = wb->scale.pr/cen->scale.pr;
-    for(int i = 0; i < 3; i++)sconv(idx++) = wb->scale.vt/cen->scale.vt;
-    for(int i = 0; i < 3; i++)sconv(idx++) = wb->scale.L/cen->scale.L;
-    //sconv(idx++) = wb->scale.t/cen->scale.t;
-    for(int i = 0; i < 2; i++){
-        for(int i = 0; i < 3; i++)sconv(idx++) = wb->scale.pt/cen->scale.pt;
-        for(int i = 0; i < 3; i++)sconv(idx++) = wb->scale.pr/cen->scale.pr;
-    }
 }
 
 void PlannerWholebody::Observe(){
@@ -468,12 +426,36 @@ void PlannerWholebody::UpdateInput(){
             dend.force_r = dymp::zero3;
         }
         else{
-            dymp::real_t fz = dend.force_t.z();
+            /*
+            // add feedback term to reduce error between desired and measured forces
+            vec3_t f = dend.pos_r*robot->foot[i].force;
+            vec3_t m = dend.pos_r*robot->foot[i].moment;
+            
+            if(force_mod.empty()){
+                force_mod .resize(nend);
+                moment_mod.resize(nend);
+                for(int i = 0; i < nend; i++){
+                    force_mod [i] = zero3;
+                    moment_mod[i] = zero3;
+                }
+            }
+
+            const real_t gain    = 100;
+            const real_t damping = 10;
+            vec3_t fe = dend.force_t - f;
+            vec3_t me = dend.force_r - m;
+
+            real_t dt = robot->timer.dt*robot->param.control_cycle;
+            force_mod [i] += (gain*fe - damping*force_mod [i])*dt;
+            moment_mod[i] += (gain*me - damping*moment_mod[i])*dt;
+
+            dend.force_t += force_mod [i];
+            dend.force_r += moment_mod[i];
+            */
             
             // limit by measured force
-            //if(i == 3 || i == 4){
-            fz = std::max(0.0, std::min(fz, robot->foot[i].force.z()));
-            //}
+            real_t fz = std::max(0.0, std::min(dend.force_t.z(), robot->foot[i].force.z()));
+            
             // enforce contact force constraint
             dymp::vec3_t flocal = dend.pos_r.conjugate()*dend.force_t;
             dymp::vec3_t mlocal = dend.pos_r.conjugate()*dend.force_r;
@@ -486,6 +468,14 @@ void PlannerWholebody::UpdateInput(){
             dend.force_t = dend.pos_r*flocal;
             dend.force_r = dend.pos_r*mlocal;
             /*
+            */
+            /*
+            dend.force_t.z() = std::max(0.0, dend.force_t.z());
+            dend.force_t.x() = std::min(std::max(-dend_des.mu*fz, dend.force_t.x()),  dend_des.mu*fz);
+            dend.force_t.y() = std::min(std::max(-dend_des.mu*fz, dend.force_t.y()),  dend_des.mu*fz);
+            dend.force_r.x() = std::min(std::max( dend_des.cop_min.y()*fz, dend.force_r.x()),  dend_des.cop_max.y()*fz);
+            dend.force_r.y() = std::min(std::max(-dend_des.cop_max.x()*fz, dend.force_r.y()), -dend_des.cop_min.x()*fz);
+            dend.force_r.z() = std::min(std::max( dend_des.cop_min.z()*fz, dend.force_r.z()),  dend_des.cop_max.z()*fz);
             */
         }
     }
@@ -563,6 +553,7 @@ void PlannerWholebody::GetDesiredState(int k, dymp::real_t t, dymp::WholebodyDat
                 robot->planner_centroid->GetCentroid(), 
                 robot->planner_centroid->data_traj,
                 wb, d);
+            
             //DSTR << k << "pos_r: " << d.centroid.pos_r << " vel_r: " << d.centroid.vel_r << " L: " << d.centroid.Labs << endl;
         }
     }
@@ -598,11 +589,9 @@ void PlannerWholebody::GetDesiredState(int k, dymp::real_t t, dymp::WholebodyDat
         d.centroid.pos_r_weight = wf*centroidOriWeight;
         d.centroid.vel_t_weight = wf*centroidVelWeight;
         d.centroid.L_weight     = wf*centroidLWeight;
-        //d.centroid.vel_r_weight = wf*ToSpr(centroidAngvelWeight);
         d.centroid.acc_t_weight = 10000.0*dymp::one3;
         d.centroid.Ld_weight    = 10000.0*dymp::one3;
-        //d.centroid.acc_r_weight = 10000.0*one;
-
+        
         int nend   = (int)d.ends  .size();
         int njoint = (int)d.joints.size();
 
@@ -630,19 +619,6 @@ void PlannerWholebody::GetDesiredState(int k, dymp::real_t t, dymp::WholebodyDat
         
             dymp::real_t wf = (dend.state == dymp::Wholebody::ContactState::Free ? freeWeight : 1.0);
         
-            // end-specific weight scale
-            //if(i == Kinematics::End::ChestP){
-            //    dend.pos_t_weight = dymp::zero3;
-            //    dend.pos_r_weight = torsoOriWeight;
-            //    dend.vel_t_weight = dymp::zero3;
-            //    dend.vel_r_weight = torsoAngvelWeight;
-            //}
-            //if(i == Kinematics::End::HandR || i == Kinematics::End::HandL){
-            //    dend.pos_t_weight = handPosWeight   ;
-            //    dend.pos_r_weight = handOriWeight   ;
-            //    dend.vel_t_weight = handVelWeight   ;
-            //    dend.vel_r_weight = handAngvelWeight;
-            //}
             if(i == Kinematics::End::FootR || i == Kinematics::End::FootL){
                 dend.pos_t_weight = wf*(dend.state == dymp::Wholebody::ContactState::Free ? 1.0 : 1.0)*footPosWeight   ;
                 dend.pos_r_weight = wf*(dend.state == dymp::Wholebody::ContactState::Free ? 1.0 : 1.0)*footOriWeight   ;
@@ -904,8 +880,8 @@ void PlannerWholebody::Visualize(cnoid::vnoid::Visualizer* viz, cnoid::vnoid::Vi
             const dymp::real_t r = 0.1;
             for(int i = 0; i < nend; i++){
                 // skip upper ends of desired pose
-                if(item == 1 && (0 <= i && i <= 2))
-                    continue;
+                //if(item == 1 && (0 <= i && i <= 2))
+                //    continue;
 
                 dymp::vec3_t pe;
                 dymp::quat_t qe;

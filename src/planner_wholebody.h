@@ -37,6 +37,7 @@ public:
 	int     inputMode;
 	bool    usePoseseq;
 	bool    useCentroid;
+	bool    enableWarmstart;
 
 	double   initialWeight;
 	double   terminalWeight;
@@ -44,26 +45,16 @@ public:
 	Vector3  centroidPosWeight;
 	Vector3  centroidVelWeight;
 	Vector3  centroidOriWeight;
-	Vector3  centroidAngvelWeight;
 	Vector3  centroidLWeight;
 	Vector3  baseOriWeight;
 	Vector3  baseAngvelWeight;
 	Vector3  baseAngaccWeight;
-	Vector3  torsoOriWeight;
-	Vector3  torsoAngvelWeight;
-	Vector3  torsoAngaccWeight;
 	Vector3  footPosWeight;
 	Vector3  footOriWeight;
 	Vector3  footVelWeight;
 	Vector3  footAngvelWeight;
 	Vector3  footAccWeight;
 	Vector3  footAngaccWeight;
-	Vector3  handPosWeight;
-	Vector3  handOriWeight;
-	Vector3  handVelWeight;
-	Vector3  handAngvelWeight;
-	Vector3  handAccWeight;
-	Vector3  handAngaccWeight;
 	Vector3  endForceWeight;
 	Vector3  endMomentWeight;
 	Vector3  endForcerateWeight;
@@ -80,11 +71,10 @@ public:
 	vector<dymp::WholebodyData>  data_traj, data_traj_des;
 	vector<double>  qd_prev;
 	double  time_prev;
+	//vector<vec3_t>  force_mod, moment_mod;
 	
 	// used for comparison only
 	dymp::WholebodyData  data_des_poseseq, data_des_centroid;
-
-	dymp::Vector  sconv;
 
 public:	
 	dymp::Wholebody* GetWholebody();

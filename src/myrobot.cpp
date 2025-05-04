@@ -76,13 +76,17 @@ void MyRobot::Init(cnoid::SimpleControllerIO* io){
 
     Robot::Init(io, timer, joint);
 
-    planner_centroid->Init();
-    planner_wb      ->Init();
+    planner_centroid->CreateThreads();
+    planner_wb      ->CreateThreads();
+
     poseseq         ->Init();
     
     planner_centroid->InitState();
     planner_wb      ->InitState();
     
+    planner_centroid->InitThreads();
+    planner_wb      ->InitThreads();
+
     planner_centroid->RunThreads();
     planner_wb      ->RunThreads();
     
@@ -139,6 +143,14 @@ void MyRobot::Init(cnoid::SimpleControllerIO* io){
 
     fileTiming = fopen("timing.csv", "w");
 
+    FILE* file = fopen("disturbance.csv", "r");
+    disturbance_magnitude = 0.0;
+    disturbance_angle     = 0.0;
+    disturbance_time      = 0.0;
+    disturbance_duration  = 0.0;
+    fscanf(file, "%lf %lf %lf %lf", &disturbance_magnitude, &disturbance_angle, &disturbance_time, &disturbance_duration);
+    fclose(file);
+
     tprev = 0.0;
     tprevSwitch = -1.0;
 }
@@ -173,6 +185,19 @@ void MyRobot::Control(){
         Visualize(timer);
 
         Robot::Actuate(timer, base, joint);
+
+        cnoid::Link* target = io_body->link(0);
+        if( disturbance_time <= timer.time && timer.time <= disturbance_time + disturbance_duration ){
+            Vector3 f = (param.total_mass/(param.T*disturbance_duration))*disturbance_magnitude*Vector3(cos((3.1415/180.0)*disturbance_angle), sin((3.1415/180.0)*disturbance_angle), 0.0);
+            target->f_ext  () = f;
+	        target->tau_ext() = target->p().cross(f);
+        }
+        else{
+            target->f_ext  () = Vector3::Zero();
+	        target->tau_ext() = Vector3::Zero();
+        }
+        /*
+        */
 
         timer.control_count++;
     }
@@ -245,8 +270,15 @@ void MyRobot::SaveLog(){
                 pe[j] = p + q*dend.pos_t;
                 qe[j] = q*dend.pos_r;
             }
-            fe[j] = dend.force_t;
-            me[j] = dend.force_r;
+            if(i == 3){
+                // actual force from simulator
+                fe[j] = dend.pos_r*foot[j].force ;
+                me[j] = dend.pos_r*foot[j].moment;
+            }
+            else{
+                fe[j] = dend.force_t;
+                me[j] = dend.force_r;
+            }
             ae[j] = cnoid::vnoid::ToRollPitchYaw(qe[j]);
             //se[j] = (dend.state != DiMP::Wholebody::ContactState::Free);
             const dymp::real_t fzmin = 10.0;
