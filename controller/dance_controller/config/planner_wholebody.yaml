@@ -1,4 +1,4 @@
-regularization      : 0.5
+regularization      : 0.01
 state_regularization: 0.0
 cutoff_step_size    : 1.0
 min_step_size       : 1.0
@@ -9,7 +9,7 @@ mpc_timestep        : 0.020
 mpc_timestep_scale  : 1.0
 mpc_num_threads     : 5
 mpc_update_cycle    : 4
-mpc_num_iter        : 5
+mpc_num_iter        : 2
 mpc_delay_mode      : true
 mpc_feedback        : true
 fix_initial_state   : true
@@ -24,7 +24,7 @@ wholebody:
   input_mode : "acceleration"
   use_poseseq  : true
   use_centroid : true
-  enable_warmstart: false
+  enable_warmstart: true
   initial_weight        : 1.0
   terminal_weight       : 100000.0
   free_weight           : 1.0

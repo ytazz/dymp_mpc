@@ -590,8 +590,8 @@ void Poseseq::Setup(double t, dymp::Wholebody* wb, dymp::WholebodyData& d){
             }
             else{
                 dend.state   = dymp::Wholebody::ContactState::Surface;
-                dend.cop_min = dymp::vec3_t(-0.10, -0.05, -0.1);
-                dend.cop_max = dymp::vec3_t( 0.15,  0.05,  0.1);
+                dend.cop_min = dymp::vec3_t(-0.10, -0.05, -0.01);
+                dend.cop_max = dymp::vec3_t( 0.15,  0.05,  0.01);
                 dend.pos_tc  = dymp::vec3_t( 0.0 ,  0.0 ,  0.0);
             }
             dend.mu      = 2.0;
