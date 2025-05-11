@@ -34,6 +34,7 @@ public:
     FILE*  fileLog[4];
     FILE*  fileFootstep[4][2];
     FILE*  fileTiming;
+    FILE*  fileSim;
     bool   contactPrev[4][2];
 
     dymp::vec3_t vprev[4];

@@ -10,6 +10,8 @@
 
 using namespace std;
 
+dymp::Timer timerSim;
+
 namespace dymp{
 namespace mpc{
 
@@ -121,8 +123,12 @@ void MyRobot::Init(cnoid::SimpleControllerIO* io){
                 "foot%d_ori_x, foot%d_ori_y, foot%d_ori_z, "
                 "foot%d_force_x, foot%d_force_y, foot%d_force_z, "
                 "foot%d_moment_x, foot%d_moment_y, foot%d_moment_z, "
+                "foot%d_force_local_x, foot%d_force_local_y, foot%d_force_local_z, "
+                "foot%d_moment_local_x, foot%d_moment_local_y, foot%d_moment_local_z, "
                 "foot%d_zmp_x, foot%d_zmp_y, foot%d_zmp_z, "
                 "foot%d_state, ",
+                j, j, j,
+                j, j, j,
                 j, j, j,
                 j, j, j,
                 j, j, j,
@@ -151,6 +157,8 @@ void MyRobot::Init(cnoid::SimpleControllerIO* io){
     fscanf(file, "%lf %lf %lf %lf", &disturbance_magnitude, &disturbance_angle, &disturbance_time, &disturbance_duration);
     fclose(file);
 
+    fileSim = fopen("simtime.csv", "w");
+
     tprev = 0.0;
     tprevSwitch = -1.0;
 }
@@ -171,6 +179,10 @@ void MyRobot::Visualize(const cnoid::vnoid::Timer& timer){
 }
 
 void MyRobot::Control(){
+    // measure how much choreonoid itself is taking time
+    int Tsim = timerSim.CountUS();
+    fprintf(fileSim, "%d\n", Tsim);
+
     if(timer.count % param.control_cycle == 0){
         Sense(timer, base, foot, joint);
 
@@ -205,6 +217,8 @@ void MyRobot::Control(){
         SaveLog();
     }
 	timer.Countup();
+
+    timerSim.CountUS();
 }
 
 void MyRobot::SaveLog(){
@@ -235,7 +249,7 @@ void MyRobot::SaveLog(){
         );
         dymp::vec3_t p, v, a, w, L_abs, L_local, c;
         dymp::quat_t q;
-        dymp::vec3_t pe[2], ae[2], fe[2], me[2], ce[2];
+        dymp::vec3_t pe[2], ae[2], fe[2], me[2], fe_local[2], me_local[2], ce[2];
         dymp::quat_t qe[2];
         bool   se[2];
 
@@ -272,19 +286,23 @@ void MyRobot::SaveLog(){
             }
             if(i == 3){
                 // actual force from simulator
-                fe[j] = dend.pos_r*foot[j].force ;
-                me[j] = dend.pos_r*foot[j].moment;
+                fe_local[j] = foot[j].force ;
+                me_local[j] = foot[j].moment;
+                fe[j] = qe[j]*fe_local[j];
+                me[j] = qe[j]*me_local[j];
             }
             else{
                 fe[j] = dend.force_t;
                 me[j] = dend.force_r;
+                fe_local[j] = qe[j].conjugate()*fe[j];
+                me_local[j] = qe[j].conjugate()*me[j];
             }
             ae[j] = cnoid::vnoid::ToRollPitchYaw(qe[j]);
             //se[j] = (dend.state != DiMP::Wholebody::ContactState::Free);
             const dymp::real_t fzmin = 10.0;
-            se[j] = (fe[j].z() > fzmin);
+            se[j] = (fe_local[j].z() > fzmin);
             if(se[j])
-                 ce[j] = dymp::vec3_t(-me[j].y()/fe[j].z(), me[j].x()/fe[j].z(), 0.0);
+                 ce[j] = dymp::vec3_t(-me_local[j].y()/fe_local[j].z(), me_local[j].x()/fe_local[j].z(), 0.0);
             else ce[j] = dymp::zero3;
         }
 
@@ -335,11 +353,15 @@ void MyRobot::SaveLog(){
                 "%f, %f, %f, "
                 "%f, %f, %f, "
                 "%f, %f, %f, "
+                "%f, %f, %f, "
+                "%f, %f, %f, "
                 "%d, ",
                 pe[j].x(), pe[j].y(), pe[j].z(),
                 ae[j].x(), ae[j].y(), ae[j].z(),
                 fe[j].x(), fe[j].y(), fe[j].z(),
                 me[j].x(), me[j].y(), me[j].z(),
+                fe_local[j].x(), fe_local[j].y(), fe_local[j].z(),
+                me_local[j].x(), me_local[j].y(), me_local[j].z(),
                 pe[j].x() + ce[j].x(), pe[j].y() + ce[j].y(), pe[j].z() + ce[j].z(),
                 se[j]
             );
