@@ -11,6 +11,7 @@ initial_phase        : 0
 #pseq_file            : "mikumiku/mikumiku_1b.pseq"
 #pseq_file            : "mikumiku/mikumiku_1sabi.pseq"
 #pseq_file            : "sample/boxstep.pseq"
-pseq_file            : "sample/moonwalk.pseq"
+#pseq_file            : "sample/moonwalk.pseq"
 #pseq_file            : "sample/henshin.pseq"
 #pseq_file            : "sample/steppingstone.pseq"
+pseq_file            : "sample/windingroad.pseq"

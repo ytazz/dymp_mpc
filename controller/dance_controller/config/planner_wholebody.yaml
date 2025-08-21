@@ -9,7 +9,7 @@ mpc_timestep        : 0.020
 mpc_timestep_scale  : 1.0
 mpc_num_threads     : 5
 mpc_update_cycle    : 4
-mpc_num_iter        : 3
+mpc_num_iter        : 5
 mpc_delay_mode      : true
 mpc_feedback        : true
 fix_initial_state   : true
