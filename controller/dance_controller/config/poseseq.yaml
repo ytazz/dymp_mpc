@@ -27,4 +27,10 @@ heel_contact_friction : 2.0
 #pseq_file            : "sample/boxstep.pseq"
 #pseq_file            : "sample/moonwalk.pseq"
 #pseq_file            : "sample/henshin.pseq"
+<<<<<<< .mine
 pseq_file            : "sample/steppingstone.pseq"
+
+=======
+#pseq_file            : "sample/steppingstone.pseq"
+pseq_file            : "sample/windingroad.pseq"
+>>>>>>> .theirs
