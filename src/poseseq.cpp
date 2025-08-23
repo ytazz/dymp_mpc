@@ -15,8 +15,21 @@ namespace dymp{
 namespace mpc{
 
 Poseseq::Poseseq(){
-    playSpeed    = 1.0;
-    initialPhase = 0;
+    playSpeed            =  1.0;
+    initialPhase         =  0;
+    flatContactCopMin    = Vector3(-0.10, -0.05, -0.01);
+    flatContactCopMax    = Vector3( 0.10,  0.05,  0.01);
+    flatContactFriction  = 1.0;
+    toeContactThreshold  =  0.01;
+    toeContactCopMin     = Vector3(0.10, -0.05, -0.01);
+    toeContactCopMax     = Vector3(0.10,  0.05,  0.01);
+    toeContactOffset     = 0.10;
+    toeContactFriction   = 1.0;
+    heelContactThreshold = -0.01;
+    heelContactCopMin    = Vector3(-0.10, -0.05, -0.01);
+    heelContactCopMax    = Vector3(-0.10,  0.05,  0.01);
+    heelContactOffset    = -0.10;
+    heelContactFriction  = 1.0;
 }
 
 Poseseq::IKLink::IKLink(){            
@@ -47,11 +60,24 @@ Poseseq::Key::Key(){
 }
 
 void Poseseq::Read(const YAML::Node& node){
-    ReadDouble(playSpeed         , node["play_speed"]          );
-    ReadInt   (initialPhase      , node["initial_phase"]       );
-    ReadString(pseqFile          , node["pseq_file"]           );
-    ReadString(baseLinkName      , node["base_link_name"]      );
-    ReadVectorString(endLinkName , node["end_link_name"]       );
+    ReadDouble      (playSpeed           , node["play_speed"            ]);
+    ReadInt         (initialPhase        , node["initial_phase"         ]);
+    ReadString      (pseqFile            , node["pseq_file"             ]);
+    ReadString      (baseLinkName        , node["base_link_name"        ]);
+    ReadVectorString(endLinkName         , node["end_link_name"         ]);
+    ReadVector3     (flatContactCopMin   , node["flat_contact_cop_min"  ]);
+    ReadVector3     (flatContactCopMax   , node["flat_contact_cop_max"  ]);
+    ReadDouble      (flatContactFriction , node["flat_contact_friction" ]);
+    ReadDouble      (toeContactThreshold , node["toe_contact_threshold" ]);
+    ReadVector3     (toeContactCopMin    , node["toe_contact_cop_min"   ]);
+    ReadVector3     (toeContactCopMax    , node["toe_contact_cop_max"   ]);
+    ReadDouble      (toeContactOffset    , node["toe_contact_offset"    ]);
+    ReadDouble      (toeContactFriction  , node["toe_contact_friction"  ]);
+    ReadDouble      (heelContactThreshold, node["heel_contact_threshold"]);
+    ReadVector3     (heelContactCopMin   , node["heel_contact_cop_min"  ]);
+    ReadVector3     (heelContactCopMax   , node["heel_contact_cop_max"  ]);
+    ReadDouble      (heelContactOffset   , node["heel_contact_offset"   ]);
+    ReadDouble      (heelContactFriction , node["heel_contact_friction" ]);
 }
 
 bool Poseseq::Load(const YAML::Node& node){
@@ -93,9 +119,8 @@ bool Poseseq::Load(const YAML::Node& node){
             ReadVector3(lnk.partingDirection, ikLinkNode["partingDirection"]);
 
             // detect toe/heel contact
-            const dymp::real_t th = 0.01;
-            lnk.isToeContact  = lnk.isTouching && (lnk.angle.y() >  th);
-            lnk.isHeelContact = lnk.isTouching && (lnk.angle.y() < -th);
+            lnk.isToeContact  = lnk.isTouching && (lnk.angle.y() > toeContactThreshold );
+            lnk.isHeelContact = lnk.isTouching && (lnk.angle.y() < heelContactThreshold);
 
             key.pose.ikLinks.push_back(lnk);
         }
@@ -578,26 +603,26 @@ void Poseseq::Setup(double t, dymp::Wholebody* wb, dymp::WholebodyData& d){
         if(contact){
             if(toe){
                 dend.state   = dymp::Wholebody::ContactState::Line;
-                dend.cop_min = dymp::vec3_t( 0.15, -0.05, -0.01);
-                dend.cop_max = dymp::vec3_t( 0.15,  0.05,  0.01);
-                dend.pos_tc  = dymp::vec3_t( 0.15,  0.0 ,  0.0  );
+                dend.cop_min = toeContactCopMin;
+                dend.cop_max = toeContactCopMax;
+                dend.pos_tc  = dymp::vec3_t(toeContactOffset, 0.0, 0.0);
+                dend.mu      = toeContactFriction;
             }
             else if(heel){
                 dend.state   = dymp::Wholebody::ContactState::Line;
-                dend.cop_min = dymp::vec3_t(-0.1, -0.05, -0.01);
-                dend.cop_max = dymp::vec3_t(-0.1,  0.05,  0.01);
-                dend.pos_tc  = dymp::vec3_t( 0.1 , 0.0 ,  0.0  );
+                dend.cop_min = heelContactCopMin;
+                dend.cop_max = heelContactCopMax;
+                dend.pos_tc  = dymp::vec3_t(heelContactOffset, 0.0, 0.0);
+                dend.mu      = heelContactFriction;
             }
             else{
                 dend.state   = dymp::Wholebody::ContactState::Surface;
-                dend.cop_min = dymp::vec3_t(-0.10, -0.05, -0.01);
-                dend.cop_max = dymp::vec3_t( 0.15,  0.05,  0.01);
-                dend.pos_tc  = dymp::vec3_t( 0.0 ,  0.0 ,  0.0);
+                dend.cop_min = flatContactCopMin;
+                dend.cop_max = flatContactCopMax;
+                dend.pos_tc  = dymp::zero3;
+                dend.mu      = flatContactFriction;
             }
-            dend.mu      = 2.0;
-            dend.normal  = normal;
-            //dend.pos_tc  = pend + qend*(wb->ends[i].offset + dend.pos_te);
-            //dend.pos_rc  = dymp::unit_quat();
+            dend.normal = normal;
         }
 
         // take care of ankle-to-foot offset here

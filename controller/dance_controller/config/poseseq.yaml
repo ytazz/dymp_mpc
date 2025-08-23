@@ -1,9 +1,23 @@
-base_link_name       : "WAIST"
-end_link_name        : ["R_ANKLE_P", "L_ANKLE_P"]
-play_speed           : 1.0
-min_contact_duration : 0.05
-max_duration         : 10.0
-initial_phase        : 0
+base_link_name        : "WAIST"
+end_link_name         : ["R_ANKLE_P", "L_ANKLE_P"]
+play_speed            : 1.0
+min_contact_duration  : 0.05
+max_duration          : 10.0
+initial_phase         : 0
+flat_contact_cop_min  : [-0.10, -0.05, -0.01]
+flat_contact_cop_max  : [ 0.15,  0.05,  0.01]
+flat_contact_offset   : 0.0
+flat_contact_friction : 2.0
+toe_contact_threshold : 0.01
+toe_contact_cop_min   : [ 0.15, -0.05, -0.01]
+toe_contact_cop_max   : [ 0.15,  0.05,  0.01]
+toe_contact_offset    : 0.15
+toe_contact_friction  : 2.0
+heel_contact_threshold: -0.01
+heel_contact_cop_min  : [-0.10, -0.05, -0.01]
+heel_contact_cop_max  : [-0.10,  0.05,  0.01]
+heel_contact_offset   : -0.10
+heel_contact_friction : 2.0
 #initial_phase        : 81  # from later half of sabi
 #initial_phase        : 30
 #pseq_file            : "mikumiku/mikumiku_intro.pseq"
@@ -11,6 +25,6 @@ initial_phase        : 0
 #pseq_file            : "mikumiku/mikumiku_1b.pseq"
 #pseq_file            : "mikumiku/mikumiku_1sabi.pseq"
 #pseq_file            : "sample/boxstep.pseq"
-pseq_file            : "sample/moonwalk.pseq"
+#pseq_file            : "sample/moonwalk.pseq"
 #pseq_file            : "sample/henshin.pseq"
-#pseq_file            : "sample/steppingstone.pseq"
+pseq_file            : "sample/steppingstone.pseq"

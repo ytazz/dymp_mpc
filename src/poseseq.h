@@ -59,21 +59,30 @@ public:
 
         Key();
     };
-    /*struct Face{
-        dymp::vec3_t  pos;
-        dymp::quat_t  ori;
-    };*/
-
-    double  playSpeed;
-    int     initialPhase;
-    string  pseqFile;
-    string  baseLinkName;
+    
+    dymp::real_t  playSpeed;
+    int           initialPhase;
+    dymp::vec3_t  flatContactCopMin;
+    dymp::vec3_t  flatContactCopMax;
+    dymp::real_t  flatContactFriction;
+    dymp::real_t  toeContactThreshold;
+    dymp::vec3_t  toeContactCopMin;
+    dymp::vec3_t  toeContactCopMax;
+    dymp::real_t  toeContactOffset;
+    dymp::real_t  toeContactFriction;
+    dymp::real_t  heelContactThreshold;
+    dymp::vec3_t  heelContactCopMin;
+    dymp::vec3_t  heelContactCopMax;
+    dymp::real_t  heelContactOffset;
+    dymp::real_t  heelContactFriction;
+    
+    string          pseqFile;
+    string          baseLinkName;
     vector<string>  endLinkName;
     
     MyRobot*      robot;
     vector<Key>   keys;
-    //vector<Face>  faces;
-
+    
 public:
     void           Read   (const YAML::Node& node);
     bool           Load   (const YAML::Node& node);
