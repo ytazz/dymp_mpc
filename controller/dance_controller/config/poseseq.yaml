@@ -20,7 +20,7 @@ heel_contact_offset   : -0.10
 heel_contact_friction : 2.0
 #initial_phase        : 81  # from later half of sabi
 #initial_phase        : 30
-pseq:
+pseq_file:
  #-
  # filename: "mikumiku/mikumiku_intro.pseq"
  #- 
@@ -40,9 +40,9 @@ pseq:
   time_offset: 0.0
  -
   filename: "sample/steppingstone.pseq"
-  time_offset: 5.0
+  time_offset: 2.2
  -
   filename: "sample/steppingstone_end.pseq"
-  time_offset: 10.0
+  time_offset: 6.0
  #-
  # filename: "sample/windingroad.pseq"

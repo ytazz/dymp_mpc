@@ -154,6 +154,8 @@ bool Poseseq::Load(const string& dirPath){
         for(int i = lastIdx; i < keys.size(); i++){
             keys[i].time += ps.timeOffset;
         }
+
+        lastIdx = keys.size();
     }
        
     return true;
