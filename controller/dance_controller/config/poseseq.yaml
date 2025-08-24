@@ -20,17 +20,29 @@ heel_contact_offset   : -0.10
 heel_contact_friction : 2.0
 #initial_phase        : 81  # from later half of sabi
 #initial_phase        : 30
-#pseq_file            : "mikumiku/mikumiku_intro.pseq"
-#pseq_file            : "mikumiku/mikumiku_1a.pseq"
-#pseq_file            : "mikumiku/mikumiku_1b.pseq"
-#pseq_file            : "mikumiku/mikumiku_1sabi.pseq"
-#pseq_file            : "sample/boxstep.pseq"
-#pseq_file            : "sample/moonwalk.pseq"
-#pseq_file            : "sample/henshin.pseq"
-<<<<<<< .mine
-pseq_file            : "sample/steppingstone.pseq"
-
-=======
-#pseq_file            : "sample/steppingstone.pseq"
-pseq_file            : "sample/windingroad.pseq"
->>>>>>> .theirs
+pseq:
+ #-
+ # filename: "mikumiku/mikumiku_intro.pseq"
+ #- 
+ # filename: "mikumiku/mikumiku_1a.pseq"
+ #-
+ # filename: "mikumiku/mikumiku_1b.pseq"
+ #-
+ # filename: "mikumiku/mikumiku_1sabi.pseq"
+ #-
+ # filename: "sample/boxstep.pseq"
+ #-
+ # filename: "sample/moonwalk.pseq"
+ #-
+ # filename: "sample/henshin.pseq"
+ -
+  filename: "sample/steppingstone_begin.pseq"
+  time_offset: 0.0
+ -
+  filename: "sample/steppingstone.pseq"
+  time_offset: 5.0
+ -
+  filename: "sample/steppingstone_end.pseq"
+  time_offset: 10.0
+ #-
+ # filename: "sample/windingroad.pseq"

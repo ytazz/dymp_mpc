@@ -59,10 +59,13 @@ Poseseq::Key::Key(){
     maxTransitionTime = 0.0;
 }
 
+Poseseq::PseqFile::PseqFile(){
+    timeOffset = 0.0;
+}
+
 void Poseseq::Read(const YAML::Node& node){
     ReadDouble      (playSpeed           , node["play_speed"            ]);
     ReadInt         (initialPhase        , node["initial_phase"         ]);
-    ReadString      (pseqFile            , node["pseq_file"             ]);
     ReadString      (baseLinkName        , node["base_link_name"        ]);
     ReadVectorString(endLinkName         , node["end_link_name"         ]);
     ReadVector3     (flatContactCopMin   , node["flat_contact_cop_min"  ]);
@@ -78,6 +81,15 @@ void Poseseq::Read(const YAML::Node& node){
     ReadVector3     (heelContactCopMax   , node["heel_contact_cop_max"  ]);
     ReadDouble      (heelContactOffset   , node["heel_contact_offset"   ]);
     ReadDouble      (heelContactFriction , node["heel_contact_friction" ]);
+
+    //ReadString      (pseqFile            , node["pseq_file"             ]);
+    for(int i = 0; i < node["pseq_file"].size(); i++){
+        YAML::Node pseqNode = node["pseq_file"][i];
+        PseqFile ps;
+        ReadString(ps.filename  , pseqNode["filename"   ]);
+        ReadDouble(ps.timeOffset, pseqNode["time_offset"]);
+        pseqFile.push_back(ps);
+    }
 }
 
 bool Poseseq::Load(const YAML::Node& node){
@@ -128,6 +140,22 @@ bool Poseseq::Load(const YAML::Node& node){
         keys.push_back(key);
     }
 
+    return true;
+}
+
+bool Poseseq::Load(const string& dirPath){
+    keys.clear();
+    int lastIdx = 0;
+    for(auto& ps : pseqFile){
+        if(!Load(YAML::LoadFile(dirPath + ps.filename)))
+            return false;
+        
+        // modify timestamp
+        for(int i = lastIdx; i < keys.size(); i++){
+            keys[i].time += ps.timeOffset;
+        }
+    }
+       
     return true;
 }
 

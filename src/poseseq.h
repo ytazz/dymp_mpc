@@ -59,6 +59,12 @@ public:
 
         Key();
     };
+    struct PseqFile{
+        string  filename;
+        double  timeOffset;
+
+        PseqFile();
+    };
     
     dymp::real_t  playSpeed;
     int           initialPhase;
@@ -76,9 +82,9 @@ public:
     dymp::real_t  heelContactOffset;
     dymp::real_t  heelContactFriction;
     
-    string          pseqFile;
-    string          baseLinkName;
-    vector<string>  endLinkName;
+    vector<PseqFile>  pseqFile;
+    string            baseLinkName;
+    vector<string>    endLinkName;
     
     MyRobot*      robot;
     vector<Key>   keys;
@@ -86,6 +92,7 @@ public:
 public:
     void           Read   (const YAML::Node& node);
     bool           Load   (const YAML::Node& node);
+    bool           Load   (const string& dirPath);
     void           Init   ();
     pair<int,int>  Find   (double t);
     double         GetTime(int k);
