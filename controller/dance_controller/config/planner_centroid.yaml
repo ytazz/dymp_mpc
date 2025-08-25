@@ -34,8 +34,8 @@ centroid:
   end_wrench_parametrization : "stiffness"
   #end_wrench_parametrization : "direct"
   #end_interpolation          : "cycloid_local"
-  end_interpolation          : "cycloid_global"
-  #end_interpolation          : "polynomial"
+  #end_interpolation          : "cycloid_global"
+  end_interpolation          : "polynomial"
   compl_weight               : 1000
   enable_feedback     : false
   save_traj           : true

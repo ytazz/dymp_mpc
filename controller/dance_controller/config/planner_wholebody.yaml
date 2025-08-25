@@ -21,12 +21,14 @@ save_plan           : false
 save_comptime       : true
 wholebody:
   use_Ld   : true
+  use_true_base_pos : false
+  sensing_noise_ratio : 0.10
   input_mode : "acceleration"
   use_poseseq  : true
   use_centroid : true
   enable_warmstart: true
   initial_weight        : 1.0
-  terminal_weight       : 100000.0
+  terminal_weight       : 00000.0
   free_weight           : 1.0
   centroid_pos_weight   : [5,5,5]
   centroid_ori_weight   : [5,5,5]

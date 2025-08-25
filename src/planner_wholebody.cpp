@@ -114,9 +114,13 @@ void PlannerThreadWholebody::futr_vec_mul(dymp::Matrix& fu, dymp::Vector& v, dym
     vec_add(v.SubVector(12,nj), y.SubVector(6,nj), h2/2);
 }
 
-PlannerWholebody::PlannerWholebody(){
+PlannerWholebody::PlannerWholebody():
+    normalDist(0, 1)
+{
     name = "planner_wholebody";
     useLd       = true;
+    useTrueBasePos = true;
+    sensingNoiseRatio = 0.0;
     //useJerk     = false;
     inputMode   = dymp::Wholebody::InputMode::Acceleration;
     usePoseseq  = true;
@@ -150,6 +154,8 @@ void PlannerWholebody::Read(const YAML::Node& node){
     const YAML::Node& wbNode = node["wholebody"];
 
     ReadBool(useLd      , wbNode["use_Ld"]);
+    ReadBool(useTrueBasePos, wbNode["use_true_base_pos"]);
+    ReadDouble(sensingNoiseRatio, wbNode["sensing_noise_ratio"]);
     
     string str;
     ReadString(str, wbNode["input_mode"]);
@@ -238,27 +244,52 @@ void PlannerWholebody::InitState(){
     time_prev = robot->timer.time;
 }
 
+inline double PlannerWholebody::SampleNormal(){
+    return normalDist(randGen);
+}
+inline double PlannerWholebody::AddNoise(double x){
+    return x + sensingNoiseRatio*std::abs(x)*SampleNormal();
+}
+inline vec3_t PlannerWholebody::AddNoise(const vec3_t& x){
+    return vec3_t(
+        AddNoise(x[0]),
+        AddNoise(x[1]),
+        AddNoise(x[2])
+    );
+}
+inline quat_t PlannerWholebody::AddNoise(const quat_t& q){
+    quat_t y(
+        AddNoise(q.w()),
+        AddNoise(q.x()),
+        AddNoise(q.y()),
+        AddNoise(q.z())
+    );
+    y.normalize();
+    return y;
+}
+
 void PlannerWholebody::Observe(){
     dymp::Wholebody* wb = GetWholebody();
     
-    dymp::vec3_t p0 = robot->base.pos;
-    dymp::vec3_t v0 = robot->base.vel;
-    dymp::quat_t q0 = robot->base.ori;
-    dymp::vec3_t w0 = robot->base.angvel;
+    dymp::vec3_t p0 = AddNoise(robot->base.pos);
+    dymp::vec3_t v0 = AddNoise(robot->base.vel);
+    dymp::quat_t q0 = AddNoise(robot->base.ori);
+    dymp::vec3_t w0 = AddNoise(robot->base.angvel);
     data_cur.centroid.pos_r = q0;
     data_cur.centroid.vel_r = w0;
 
     int njoint = (int)wb->joints.size();
     for(int i = 0; i < njoint; i++){
-        data_cur.joints[i].q  = robot->joint[i].q;
-        data_cur.joints[i].qd = robot->joint[i].dq;
+        data_cur.joints[i].q  = AddNoise(robot->joint[i].q );
+        data_cur.joints[i].qd = AddNoise(robot->joint[i].dq);
     }
     for(int i = 0; i < 2; i++){
         dymp::WholebodyData::End& dend = data_cur.ends[i];
 
-        dend.force_t = dend.pos_r*robot->foot[i].force ;
-        dend.force_r = dend.pos_r*robot->foot[i].moment;
+        dend.force_t = AddNoise(dend.pos_r*robot->foot[i].force );
+        dend.force_r = AddNoise(dend.pos_r*robot->foot[i].moment);
     }
+
     /*
     */
     // pb_abs = pc + qb*pb
@@ -267,9 +298,25 @@ void PlannerWholebody::Observe(){
     wb->CalcPosition(data_cur);
     wb->CalcVelocity(data_cur);
 
-    data_cur.centroid.pos_t = p0 - q0*data_cur.links[0].pos_t;
-    data_cur.centroid.vel_t = v0 - q0*data_cur.links[0].vel_t - w0.cross(q0*data_cur.links[0].pos_t);
-
+    if(useTrueBasePos){
+        data_cur.centroid.pos_t = p0 - q0*data_cur.links[0].pos_t;
+        data_cur.centroid.vel_t = v0 - q0*data_cur.links[0].vel_t - w0.cross(q0*data_cur.links[0].pos_t);
+    }
+    else{
+        //if(robot->foot[0].contact){
+        //    p0 = data_ref.ends[0].pos_t_abs - q0*data_cur.ends[0].pos_t;
+        //    v0 = data_ref.ends[0].vel_t_abs - (q0*data_cur.ends[0].vel_t + w0.cross(q0*data_cur.ends[0].pos_t));
+        //}
+        //else if(robot->foot[1].contact){
+        //    p0 = data_ref.ends[1].pos_t_abs - q0*data_cur.ends[1].pos_t;
+        //    v0 = data_ref.ends[1].vel_t_abs - (q0*data_cur.ends[1].vel_t + w0.cross(q0*data_cur.ends[1].pos_t));
+        //}
+        //else{
+            data_cur.centroid.pos_t = data_ref.centroid.pos_t;
+            data_cur.centroid.vel_t = data_ref.centroid.vel_t;
+        //}
+    }
+    
     wb->CalcAcceleration           (data_cur);
     wb->CalcInertia                (data_cur);
     wb->CalcInertiaDerivative      (data_cur);
@@ -841,7 +888,8 @@ void PlannerWholebody::Visualize(cnoid::vnoid::Visualizer* viz, cnoid::vnoid::Vi
         
         int iv = 0;
         int ii = 0;
-        for(int k = 0; k < N; k++){
+        int kstep = 5;
+        for(int k = 0; k < N; k += kstep){
             dymp::WholebodyData& d = (item == 0 ? data_traj[k] : (item == 1 ? /*data_des*/data_traj_des[k] : data_cur));
         
             dymp::vec3_t pc = d.centroid.pos_t;

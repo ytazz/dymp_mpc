@@ -2,6 +2,8 @@
 
 #include "planner.h"
 
+#include <random>
+
 namespace dymp{
 namespace mpc{
 
@@ -33,6 +35,8 @@ public:
 class PlannerWholebody : public Planner,  public dymp::WholebodyCallback{
 public:
 	bool    useLd;
+    bool    useTrueBasePos;
+    double  sensingNoiseRatio;
 	//bool    useJerk;
 	int     inputMode;
 	bool    usePoseseq;
@@ -76,9 +80,18 @@ public:
 	// used for comparison only
 	dymp::WholebodyData  data_des_poseseq, data_des_centroid;
 
+    std::random_device                randDev;
+    std::mt19937                      randGen;
+    std::normal_distribution<double>  normalDist;
+
 public:	
 	dymp::Wholebody* GetWholebody();
 	void SavePlan();
+
+    inline double SampleNormal();
+    inline double AddNoise(double x);    
+    inline vec3_t AddNoise(const vec3_t& x);
+    inline quat_t AddNoise(const quat_t& q);
 
 	virtual PlannerThread*  CreateThread();
 
