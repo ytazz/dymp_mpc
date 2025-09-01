@@ -34,11 +34,14 @@ centroid:
   end_wrench_parametrization : "stiffness"
   #end_wrench_parametrization : "direct"
   #end_interpolation          : "cycloid_local"
-  #end_interpolation          : "cycloid_global"
-  end_interpolation          : "polynomial"
+  end_interpolation          : "cycloid_global"
+  #end_interpolation          : "polynomial"
   compl_weight               : 1000
   enable_feedback     : false
   save_traj           : true
+  visualize_com       : true
+  visualize_contact   : true
+  visualize_traj      : true
   end:
    -
     base_pos      : [ 0.0, -0.05,   0.0]
@@ -80,7 +83,7 @@ centroid:
   centroid_L_weight     : [1,1,1]
   time_weight           : 10
   duration_weight       : 10
-  end_pos_weight        : [10,10]
+  end_pos_weight        : [5,5]
   end_ori_weight        : 1
   end_vel_weight        : [1,1]
   end_angvel_weight     : 1

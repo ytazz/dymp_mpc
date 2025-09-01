@@ -29,8 +29,8 @@ pseq_file:
  # filename: "mikumiku/mikumiku_1b.pseq"
  #-
  # filename: "mikumiku/mikumiku_1sabi.pseq"
- -
-  filename: "sample/boxstep.pseq"
+ #-
+ # filename: "sample/boxstep.pseq"
  #-
  # filename: "sample/moonwalk.pseq"
  #-
@@ -44,5 +44,5 @@ pseq_file:
  #-
  # filename: "sample/steppingstone_end.pseq"
  # time_offset: 6.0
- #-
- # filename: "sample/windingroad.pseq"
+ -
+  filename: "sample/windingroad.pseq"

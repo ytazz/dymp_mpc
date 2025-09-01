@@ -42,6 +42,10 @@ public:
 	bool    usePoseseq;
 	bool    useCentroid;
 	bool    enableWarmstart;
+    bool    visualizePlan;
+    bool    visualizeDesired;
+    bool    visualizeCurrent;
+    int     visualizeSkip;
 
 	double   initialWeight;
 	double   terminalWeight;

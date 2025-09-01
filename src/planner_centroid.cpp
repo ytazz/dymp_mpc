@@ -98,6 +98,9 @@ PlannerCentroid::PlannerCentroid(){
     savePlan           = false;
     saveTraj           = false;
     enableFeedback     = false;
+    visualizeCom       = true;
+    visualizeContact   = true;
+    visualizeTraj      = true;
 }
 
 void PlannerCentroid::Read(const YAML::Node& node){
@@ -179,6 +182,9 @@ void PlannerCentroid::Read(const YAML::Node& node){
 
     ReadBool(enableFeedback, cenNode["enable_feedback"]);
     ReadBool(saveTraj      , cenNode["save_traj"]);
+    ReadBool(visualizeCom    , cenNode["visualize_com"    ]);
+    ReadBool(visualizeContact, cenNode["visualize_contact"]);
+    ReadBool(visualizeTraj   , cenNode["visualize_traj"   ]);
 }
 
 PlannerThread* PlannerCentroid::CreateThread(){
@@ -845,67 +851,72 @@ void PlannerCentroid::Visualize(cnoid::vnoid::Visualizer* viz, cnoid::vnoid::Viz
     for(int k = 0; k < N; k++){
         dymp::CentroidData& d = data_traj[k];
 
-        cnoid::vnoid::Visualizer::Sphere* sphereCom = viz->data->GetSphere(info.iframe, info.isphere++);
-        sphereCom->color  = Eigen::Vector3f(1.0f, 0.0f, 1.0f);
-        sphereCom->alpha  = 0.5f;
-        sphereCom->pos    = d.pos_t;
-        sphereCom->radius = 0.015f;
+        if(visualizeCom){
+            cnoid::vnoid::Visualizer::Sphere* sphereCom = viz->data->GetSphere(info.iframe, info.isphere++);
+            sphereCom->color  = Eigen::Vector3f(1.0f, 0.0f, 1.0f);
+            sphereCom->alpha  = 0.5f;
+            sphereCom->pos    = d.pos_t;
+            sphereCom->radius = 0.015f;
+        }
+        if(visualizeContact){
+            for(int i = 0; i < nend; i++){
+                // skip floating ends
+                if(data_traj_des[k].ends[i].contact == false)
+                    continue;
 
-        for(int i = 0; i < nend; i++){
-            // skip floating ends
-            if(data_traj_des[k].ends[i].contact == false)
-                continue;
-
-            cnoid::vnoid::Visualizer::Box*  boxEnd = viz->data->GetBox(info.iframe, info.ibox++);        
-            if(data_traj_des[k].ends[i].contact == false)
-                 boxEnd->color = Eigen::Vector3f(0.5f, 0.0f, 0.5f);
-            else boxEnd->color = Eigen::Vector3f(1.0f, 0.0f, 1.0f);
-            boxEnd->alpha = 0.5f;
-            boxEnd->pos   = d.ends[i].pos_t_abs;
-            boxEnd->ori   = d.ends[i].pos_r_abs;
-            boxEnd->size  = Vector3(0.2, 0.1, 0.01);
+                cnoid::vnoid::Visualizer::Box*  boxEnd = viz->data->GetBox(info.iframe, info.ibox++);        
+                if(data_traj_des[k].ends[i].contact == false)
+                     boxEnd->color = Eigen::Vector3f(0.5f, 0.0f, 0.5f);
+                else boxEnd->color = Eigen::Vector3f(1.0f, 0.0f, 1.0f);
+                boxEnd->alpha = 0.5f;
+                boxEnd->pos   = d.ends[i].pos_t_abs;
+                boxEnd->ori   = d.ends[i].pos_r_abs;
+                boxEnd->size  = Vector3(0.2, 0.1, 0.01);
+            }
         }
     }
     
-    cnoid::vnoid::Visualizer::Lines* lines = viz->data->GetLines(info.iframe, info.ilines);
-    lines->color = Eigen::Vector3f(1.0f, 0.0f, 1.0f);
-    lines->alpha = 0.5f;
-    lines->width = 1.0f;
-    int iv = 0;
-    int ii = 0;
-    for(int k = 0; k < N-1; k++){
-        dymp::real_t t0 = data_traj[k+0].time;
-        dymp::real_t t1 = data_traj[k+1].time;
+    if(visualizeTraj){
+        cnoid::vnoid::Visualizer::Lines* lines = viz->data->GetLines(info.iframe, info.ilines);
+        lines->color = Eigen::Vector3f(1.0f, 0.0f, 1.0f);
+        lines->alpha = 0.5f;
+        lines->width = 1.0f;
+        int iv = 0;
+        int ii = 0;
+        for(int k = 0; k < N-1; k++){
+            dymp::real_t t0 = data_traj[k+0].time;
+            dymp::real_t t1 = data_traj[k+1].time;
 
-        const int ndiv = 10;
-        for(int j = 0; j <= ndiv; j++){
-            dymp::real_t a  = (dymp::real_t)j/(dymp::real_t)ndiv;
-            dymp::real_t t  = (1-a)*t0 + a*t1;
-            centroid->CalcState(t, data_traj[k+0], data_traj[k+1], dtmp[1]);
+            const int ndiv = 10;
+            for(int j = 0; j <= ndiv; j++){
+                dymp::real_t a  = (dymp::real_t)j/(dymp::real_t)ndiv;
+                dymp::real_t t  = (1-a)*t0 + a*t1;
+                centroid->CalcState(t, data_traj[k+0], data_traj[k+1], dtmp[1]);
 
-            if(j > 0){
-                viz->data->GetLineVertices(info.iframe, info.ilines)[iv+0] = Eigen::Vector3f((float)dtmp[0].pos_t.x(), (float)dtmp[0].pos_t.y(), (float)dtmp[0].pos_t.z());
-                viz->data->GetLineVertices(info.iframe, info.ilines)[iv+1] = Eigen::Vector3f((float)dtmp[1].pos_t.x(), (float)dtmp[1].pos_t.y(), (float)dtmp[1].pos_t.z());
-                viz->data->GetLineIndices (info.iframe, info.ilines)[ii+0] = iv+0;
-                viz->data->GetLineIndices (info.iframe, info.ilines)[ii+1] = iv+1;
-                iv += 2;
-                ii += 2;
-                
-                for(int i = 0; i < nend; i++){
-                    viz->data->GetLineVertices(info.iframe, info.ilines)[iv+0] = Eigen::Vector3f((float)dtmp[0].ends[i].pos_t_abs.x(), (float)dtmp[0].ends[i].pos_t_abs.y(), (float)dtmp[0].ends[i].pos_t_abs.z());
-                    viz->data->GetLineVertices(info.iframe, info.ilines)[iv+1] = Eigen::Vector3f((float)dtmp[1].ends[i].pos_t_abs.x(), (float)dtmp[1].ends[i].pos_t_abs.y(), (float)dtmp[1].ends[i].pos_t_abs.z());
+                if(j > 0){
+                    viz->data->GetLineVertices(info.iframe, info.ilines)[iv+0] = Eigen::Vector3f((float)dtmp[0].pos_t.x(), (float)dtmp[0].pos_t.y(), (float)dtmp[0].pos_t.z());
+                    viz->data->GetLineVertices(info.iframe, info.ilines)[iv+1] = Eigen::Vector3f((float)dtmp[1].pos_t.x(), (float)dtmp[1].pos_t.y(), (float)dtmp[1].pos_t.z());
                     viz->data->GetLineIndices (info.iframe, info.ilines)[ii+0] = iv+0;
                     viz->data->GetLineIndices (info.iframe, info.ilines)[ii+1] = iv+1;
                     iv += 2;
                     ii += 2;
+                
+                    for(int i = 0; i < nend; i++){
+                        viz->data->GetLineVertices(info.iframe, info.ilines)[iv+0] = Eigen::Vector3f((float)dtmp[0].ends[i].pos_t_abs.x(), (float)dtmp[0].ends[i].pos_t_abs.y(), (float)dtmp[0].ends[i].pos_t_abs.z());
+                        viz->data->GetLineVertices(info.iframe, info.ilines)[iv+1] = Eigen::Vector3f((float)dtmp[1].ends[i].pos_t_abs.x(), (float)dtmp[1].ends[i].pos_t_abs.y(), (float)dtmp[1].ends[i].pos_t_abs.z());
+                        viz->data->GetLineIndices (info.iframe, info.ilines)[ii+0] = iv+0;
+                        viz->data->GetLineIndices (info.iframe, info.ilines)[ii+1] = iv+1;
+                        iv += 2;
+                        ii += 2;
+                    }
                 }
+                dtmp[0] = dtmp[1];
             }
-            dtmp[0] = dtmp[1];
         }
+        lines->numVertices = iv;
+        lines->numIndices  = ii;
+        info.ilines++;
     }
-    lines->numVertices = iv;
-    lines->numIndices  = ii;
-    info.ilines++;
 }
 
 void PlannerCentroid::CalcQuadWeight(dymp::real_t tf, dymp::real_t wf, dymp::real_t& Vconst, dymp::Vector& Vy, dymp::Matrix& Vyy){

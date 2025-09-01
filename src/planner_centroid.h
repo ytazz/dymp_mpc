@@ -46,6 +46,9 @@ public:
 	dymp::vec3_t   endMomentWeight;
     bool           enableFeedback;
 	bool           saveTraj;
+    bool           visualizeCom;
+    bool           visualizeContact;
+    bool           visualizeTraj;
 	
 	dymp::real_t  cur_time;
 	int     cur_phase;

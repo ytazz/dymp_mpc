@@ -126,6 +126,10 @@ PlannerWholebody::PlannerWholebody():
     usePoseseq  = true;
     useCentroid = true;
     enableWarmstart = false;
+    visualizePlan    = true;
+    visualizeDesired = true;
+    visualizeCurrent = true;
+    visualizeSkip    = 1;
 
     initialWeight      = 1.0;
     terminalWeight     = 1.0;
@@ -167,6 +171,10 @@ void PlannerWholebody::Read(const YAML::Node& node){
     ReadBool(usePoseseq , wbNode["use_poseseq"]);
     ReadBool(useCentroid, wbNode["use_centroid"]);
     ReadBool(enableWarmstart, wbNode["enable_warmstart"]);
+    ReadBool(visualizePlan   , wbNode["visualize_plan"   ]);
+    ReadBool(visualizeDesired, wbNode["visualize_desired"]);
+    ReadBool(visualizeCurrent, wbNode["visualize_current"]);
+    ReadInt (visualizeSkip   , wbNode["visualize_skip"   ]);
 
     ReadDouble(initialWeight        , wbNode["initial_weight" ]);
 	ReadDouble(terminalWeight       , wbNode["terminal_weight"]);
@@ -271,8 +279,6 @@ inline quat_t PlannerWholebody::AddNoise(const quat_t& q){
 void PlannerWholebody::Observe(){
     dymp::Wholebody* wb = GetWholebody();
     
-    dymp::vec3_t p0 = AddNoise(robot->base.pos);
-    dymp::vec3_t v0 = AddNoise(robot->base.vel);
     dymp::quat_t q0 = AddNoise(robot->base.ori);
     dymp::vec3_t w0 = AddNoise(robot->base.angvel);
     data_cur.centroid.pos_r = q0;
@@ -286,8 +292,8 @@ void PlannerWholebody::Observe(){
     for(int i = 0; i < 2; i++){
         dymp::WholebodyData::End& dend = data_cur.ends[i];
 
-        dend.force_t = AddNoise(dend.pos_r*robot->foot[i].force );
-        dend.force_r = AddNoise(dend.pos_r*robot->foot[i].moment);
+        dend.force_t = dend.pos_r*robot->foot[i].force ;
+        dend.force_r = dend.pos_r*robot->foot[i].moment;
     }
 
     /*
@@ -299,22 +305,33 @@ void PlannerWholebody::Observe(){
     wb->CalcVelocity(data_cur);
 
     if(useTrueBasePos){
+        // use true base link position/velocity to calculate CoM position/velocity
+        dymp::vec3_t p0 = AddNoise(robot->base.pos);
+        dymp::vec3_t v0 = AddNoise(robot->base.vel);
         data_cur.centroid.pos_t = p0 - q0*data_cur.links[0].pos_t;
         data_cur.centroid.vel_t = v0 - q0*data_cur.links[0].vel_t - w0.cross(q0*data_cur.links[0].pos_t);
     }
     else{
-        //if(robot->foot[0].contact){
-        //    p0 = data_ref.ends[0].pos_t_abs - q0*data_cur.ends[0].pos_t;
-        //    v0 = data_ref.ends[0].vel_t_abs - (q0*data_cur.ends[0].vel_t + w0.cross(q0*data_cur.ends[0].pos_t));
-        //}
-        //else if(robot->foot[1].contact){
-        //    p0 = data_ref.ends[1].pos_t_abs - q0*data_cur.ends[1].pos_t;
-        //    v0 = data_ref.ends[1].vel_t_abs - (q0*data_cur.ends[1].vel_t + w0.cross(q0*data_cur.ends[1].pos_t));
-        //}
-        //else{
+        // estimate CoM states
+        // if either foot is in contact, calculate CoM state assuming that the foot is in the desired position
+        bool bothOff = true;
+        for(int i = 0; i < 2; i++){
+            if(robot->foot[0].contact){
+                vec3_t pe_abs = data_ref.centroid.pos_t + data_ref.centroid.pos_r*data_ref.ends[i].pos_t;
+                vec3_t ve_abs = data_ref.centroid.vel_t + data_ref.centroid.pos_r*data_ref.ends[i].vel_t
+                              + data_ref.centroid.vel_r.cross(data_ref.centroid.pos_r*data_ref.ends[i].pos_t);
+        
+                data_cur.centroid.pos_t = pe_abs -  q0*data_cur.ends[i].pos_t;
+                data_cur.centroid.vel_t = ve_abs - (q0*data_cur.ends[i].vel_t + w0.cross(q0*data_cur.ends[i].pos_t));
+
+                bothOff = false;
+            }
+        }
+        // otherwise, use the desired position/velocity of CoM
+        if(bothOff){
             data_cur.centroid.pos_t = data_ref.centroid.pos_t;
             data_cur.centroid.vel_t = data_ref.centroid.vel_t;
-        //}
+        }
     }
     
     wb->CalcAcceleration           (data_cur);
@@ -879,6 +896,10 @@ void PlannerWholebody::Visualize(cnoid::vnoid::Visualizer* viz, cnoid::vnoid::Vi
 
     // visualize planned and reference trajectory, and current state
     for(int item = 0; item < 3; item++){
+        if(item == 0 && !visualizePlan   ) continue;
+        if(item == 1 && !visualizeDesired) continue;
+        if(item == 2 && !visualizeCurrent) continue;
+
         cnoid::vnoid::Visualizer::Lines* lines = viz->data->GetLines(info.iframe, info.ilines);
         if(item == 0) lines->color = Eigen::Vector3f(0.0f, 1.0f, 0.0f);
         if(item == 1) lines->color = Eigen::Vector3f(1.0f, 0.0f, 0.0f);
@@ -888,8 +909,7 @@ void PlannerWholebody::Visualize(cnoid::vnoid::Visualizer* viz, cnoid::vnoid::Vi
         
         int iv = 0;
         int ii = 0;
-        int kstep = 5;
-        for(int k = 0; k < N; k += kstep){
+        for(int k = 0; k < N; k += visualizeSkip){
             dymp::WholebodyData& d = (item == 0 ? data_traj[k] : (item == 1 ? /*data_des*/data_traj_des[k] : data_cur));
         
             dymp::vec3_t pc = d.centroid.pos_t;
